@@ -1,0 +1,6 @@
+[int8] 量化前 346.3 MB -> 目标 QInt8
+[int8] 排除 18 个头部算子（定位头/分类头）
+WARNING:root:Please consider to run pre-processing before quantization. Refer to example: https://github.com/microsoft/onnxruntime-inference-examples/blob/main/quantization/image_classification/cpu/ReadMe.md 
+[int8] 量化后 88.6 MB  （压缩 3.91x，省下 257.7 MB）
+[int8] 数值一致性检查 通过 ✓  最大相对偏差 0.0078
+[int8] 报告已写入 outputs/b16_int8_report.json

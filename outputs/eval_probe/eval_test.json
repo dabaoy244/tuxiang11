@@ -1,0 +1,34 @@
+{
+  "split": "test",
+  "ckpt": "checkpoints/abp_best.pt",
+  "device": "cpu",
+  "cls": {
+    "acc": 0.60546875,
+    "precision": 0.5641025641025641,
+    "recall": 0.873015873015873,
+    "f1": 0.6853582554517134,
+    "auc": 0.6862637362637363,
+    "ap": 0.7003290672051856,
+    "mAP": 0.7003290672051856,
+    "tn": 45,
+    "fp": 85,
+    "fn": 16,
+    "tp": 110,
+    "n": 256
+  },
+  "loc": {},
+  "n_loc_samples": 0,
+  "perf": {
+    "latency_ms_per_image": 1133.4680097656076,
+    "fps": 0.8822481017411266,
+    "model_params_M": 90.530772,
+    "model_fp32_MB": 362.123088
+  },
+  "targets": {
+    "ForenSynths 检测准确率 >= 91%": null,
+    "CASIAv2 篡改定位 mIoU >= 56%": null,
+    "CPU 推理 >= 8 张/秒(224x224)": false,
+    "模型体积 <= 120MB": false
+  },
+  "is_synthetic_demo": false
+}

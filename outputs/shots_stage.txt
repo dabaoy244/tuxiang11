@@ -1,0 +1,18 @@
+[shots] 载入 8 条检测结果（后端=onnx）
+FT_New_Face failed with index 0 : 2
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+  [shot] 01_主界面_初始状态.png                  1391x871     102 KB  OK  五大模块布局
+This plugin does not support propagateSizeHints()
+  [shot] 02_图像输入.png                      1391x873     124 KB  OK  8 张（真实/伪造混合）
+  [shot] 02b_输入面板_特写.png                  523x288      40 KB  OK  缩略图列表
+  [shot] 03_检测结果_热力图与报告.png               1391x873     230 KB  OK  原图/热力图对照 + 判定报告
+  [shot] 03b_结果面板_特写.png                  846x758     144 KB  OK  结果面板
+  [shot] 04_批量结果表格.png                    1391x873     161 KB  OK  批量检测汇总表
+  [pdf ] 示例报告 docs/copyright/ui_shots\_demo_report.pdf
+  [shot] 05_检测报告_P1.png                   910x1287     313 KB
+  [shot] 05_检测报告_P2.png                   910x1287    1090 KB
+  [shot] 06_系统设置.png                      523x464      45 KB  OK  后端/权重路径/阈值
+  [shot] 07_全窗口_检测完成后.png                 1391x848     173 KB  OK  完整界面
+
+[shots] 输出目录 docs/copyright/ui_shots

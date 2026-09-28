@@ -1,0 +1,283 @@
+vibnet-forgery-detector · 代码包版本标识
+==========================================================
+构建时间：2026-09-27 23:05 (UTC+8)
+构建方式：本地重打（含本轮全部修复；[8] **影响训练结果**，[9] 影响"探针实验的结论"，
+          [10] **影响训练速度 14 倍、并让"全量三段重跑"从"跑不完"变成"约 9 小时"**）
+
+【一条命令确认云上是不是这一版】
+    cat VERSION.txt
+
+【四条零成本自检指纹（更严格）】
+  ① python scripts/fetch_datasets.py --self-test
+       → 必须打印「自检结果：28/28 通过」
+         （若显示 18/18，说明云上仍是更旧的包）
+  ② grep -n "monitor:" configs/default.yaml
+       → 必须输出 **4 行**，且其中一行是 `monitor: "val_loc_miou"`
+         （只输出 1 行 monitor: "val_total" = 09-25 14:25 之前的旧包）
+  ③ grep -n "RUN_REPORT" scripts/cloud_autodl.sh
+       → 能打到 RUN_REPORT.txt 才是新包（训练结束会写一份"为什么结束"的报告）
+  ④ python scripts/smoke_test.py | tail -3
+       → 必须打印「测试结果：60/60 通过」
+         （38/38 = 09-25 14:25；48/48 = 09-25 17:20；53/53 = 09-26 17:55；
+           58/58 = 09-26 18:15；**60/60 才是本版** —— 新增的两条把
+           "上采样必须走 fp32"与"验证集不许被截断"钉住了）
+  ⑤ grep -c "_apply_freeze_policy" src/models/vibnet.py
+       → 应 ≥ 1（本版新增：apply_stage 末尾重放骨干冻结策略；旧包为 0）
+  ⑥ grep -c "cudnn" scripts/train.py
+       → 应 ≥ 3（--cudnn / --amp-dtype 排查开关；17:55 之前的包为 0）
+  ⑦ grep -c 'CUDNN="${CUDNN:-on}"' scripts/cloud_autodl.sh
+       → 应 = 1。没有它，$CUDNN 未设置时 runner 那行的结尾只剩一个裸的
+         `--cudnn`，argparse 立刻 "expected one argument" 退出码 2
+         —— 训练连模型都没建起来就死，而报错在日志最前面，极易误判成环境问题
+  ⑧ grep -c "apply_runtime_flags" scripts/train.py
+       → 应 = 2（1 处函数定义 + 1 处 main() 调用）。
+         ⚠ 若只有 1 处（只有定义、没有调用），说明这两个开关是**摆设**：
+         传了 --cudnn off 也不会关 cuDNN，"开/关 cuDNN 两条对照探针"
+         会跑出完全一样的耗时，结论会反过来告诉你"cuDNN 慢路径的假设不成立"
+  ⑨ grep -c "_bilinear_upsample_fp32" src/models/mobile_unetv2.py
+       → 应 = 6（1 处定义 + 2 处调用 + 3 处注释/文档提及）。
+         本版核心修复：所有双线性上采样强制 fp32（见下方 [10]）
+  ⑩ grep -c "fused=True" src/engine/trainer.py
+       → 应 = 2（1 处调用 + 1 处日志/注释）。优化器走 fused AdamW，
+         每步的 `.item()` 从 402 次降到 **0** 次
+  ⑪ grep -c 'loaders\["val"\] *= *_Limited' scripts/train.py
+       → 应 = **0**。`--limit-batches` 只许截训练集：验证集一旦被截断，
+         前几百批（ForenSynths，无掩码）一张带掩码样本都没有，
+         stage2 的 monitor=val_loc_miou 会直接抛 KeyError
+
+----------------------------------------------------------
+本版包含的关键修复
+----------------------------------------------------------
+[6] 2026-09-25 新增 —— 修「训练约 1 小时就自己结束 + 实例被自动关机」
+    · src/engine/trainer.py
+        a) 早停作用域：原来触发早停是 `return self.history`，会**直接退出 fit()**，
+           把 stage2 / stage3 一起带走。现改为只结束**本阶段**（break），
+           后续阶段照常跑。
+           → 这就是 09-25 云上"训练约 1 小时突然结束、随后关机"的直接原因。
+        b) 监控指标按阶段解析：新增 StageConfig.monitor，可用 stages[].monitor
+           覆盖全局 train.monitor。stage2 只训定位（分类头冻结），若沿用分类指标
+           会连续 8 轮"未提升"而被误砍。
+        c) best 基准按阶段重置：不同阶段的监控指标不可比，进入新阶段时
+           best_metric 重新起算。
+        d) 早停那轮也推进 global_epoch：否则下一阶段第 1 轮会复用同一个 epoch 号
+           （history.json 出现重复 epoch，epochN 快照可能互相覆盖）。
+        e) 阶段正常结束也落一次 last.pt，中途异常退出可断点续训。
+    · configs/default.yaml / configs/lite.yaml
+        monitor: "val_total" → "val_cls_auc"，并给三个阶段分别指定：
+          stage1 → val_cls_auc      只训分类，按分类 AUC 早停
+          stage2 → val_loc_miou     分类头冻结，按定位 mIoU 早停
+          stage3 → val_cls_auc
+        「val_total」会解析成**验证损失**（_MONITOR_ALIASES），而该损失含可学习的
+        不确定性权重 0.5·exp(-s_i)，尺度随训练漂移、跨轮不可比 ——
+        实测就是它把"分类 AUC 在涨"判成了"连续 8 轮没提升"。
+    · scripts/cloud_autodl.sh
+        a) 训练结束写 outputs/RUN_REPORT.txt：结束时间 / 退出码 / 用时 / 日志末尾 60 行。
+           （实例被关机后不用重新开机才知道为什么结束）
+        b) 非正常退出（退出码≠0）时**不再自动关机**，实例保留供排查，并提示手动关机。
+    · scripts/check_status.py
+        a) 日志候选补上云上真正写的 outputs/gpu_train_log.txt
+           —— 旧包在云上永远报"日志文件不存在"，是假阴性（已于 09-25 云上实测踩到）。
+        b) 进程枚举增加 `ps` 兜底：旧包只有 Windows 的 wmic，在 Linux 上必然
+           报"没找到进程"，同样是把"训练好得很"报成"挂了"。
+        c) 去掉 subprocess(..., text=True)（中文 Windows 下 stdout 会变 None），
+           改按字节解码 + UTF-8→GBK 兜底。
+        d) crashpad 噪音提示只在 Windows 打印（云上不再打印误导性提示）。
+
+[7] 2026-09-25 17:20 新增 —— 修「stage2 第 1 个 epoch 就崩：AttributeError: 'float' object has no attribute 'backward'」
+    ★ 这是 [6] 修好之后**才第一次有机会被执行到**的 bug：stage1 连跑 20 轮都不触发。
+    · 根因（数据成分比例 × 损失函数）
+        stage2 只启用 loc/edge，这两个任务的监督项（bce/dice/edge）**全部来自像素掩码**；
+        训练集是 ForenSynths（无掩码 4 万张）+ CASIAv2/COVERAGE（带掩码 6120 张）的混合集，
+        掩码样本约 13% ⇒ batch=16 时 (1-0.133)^16 ≈ 10% 的批次**一张带掩码的都没有**。
+        此时 MultiTaskLoss 的 raw 为空，而 UncertaintyWeighting 里的 `total = 0.0`
+        始终没被替换成张量 → total 是 Python 浮点 → `loss.backward()` 直接抛异常。
+    · src/losses/multi_task.py
+        a) 新增 `zero_loss(outputs)`：raw 为空时返回**挂在计算图上的 0 张量**
+           （`v.sum()*0.0`，可安全 backward、梯度全零），而不是浮点 0.0。
+        b) 返回体新增 `empty` 标志（= raw 为空），供训练循环据此跳过参数更新。
+        c) `UncertaintyWeighting.forward` 改为 `total=None` 起手，一项都没匹配上就
+           **显式抛错**（带调用栈），不再把"空输入"静默降级成浮点 0。
+    · src/engine/trainer.py
+        a) `_train_one_epoch` 在 **backward 之前**跳过空批次（continue）：
+           既不 backward 也不 opt.step，且**不计入平均损失**
+           （否则 loss 曲线被 0 稀释成"看起来在变好"）。
+        b) epoch 结束若出现空批次则打印数量；**整轮有效批次为 0 则硬失败**，
+           报错直接指向"CASIAv2 / COVERAGE 是否 0 条"（正常占比 ~10%，100% 只可能是
+           带掩码的数据集没加载进来）。
+        c) `fit(start_stage=N)`：**跳过已完成的阶段**。配合新增的
+           `scripts/train.py --start-stage <名字|序号>`，可以从 stage2 直接续训，
+           不必重跑已训完的 stage1（约 100 分钟卡时 / ¥3）。
+           跳阶段时会把 global_epoch 顶到前面阶段的总轮数上，保证 β 退火接得上。
+    · scripts/cloud_autodl.sh
+        `train` 后面可以跟任意 train.py 参数，原样透传。例：
+            bash scripts/cloud_autodl.sh train --resume checkpoints/vibnet_best.pt \
+                --start-stage stage2_loc_pretrain
+    · scripts/smoke_test.py
+        新增【8】空批次守卫（三种任务组合 / 有·无掩码 / 跳过计数 / 整轮全空硬失败）
+        与【9】跳阶段续训（只跑 stage2+stage3、global_epoch 承接、越界收敛、
+        CLI 名字解析、上云脚本透传）。自检 38/38 → **48/48**。
+
+[8] 2026-09-26 17:55 新增 —— ① 修「配置里写"冻结前 6 层"，训练时却整支解冻」；② 加卷积后端对照开关
+    · src/models/vibnet.py（★ 这一条**影响训练结果**，不是纯工程修复）
+        `apply_stage()` 末尾改为**重放骨干冻结策略**：
+            self.spatial.backbone._apply_freeze_policy(tag=" [阶段重放]")
+        （显式 freeze "spatial" 时跳过重放 —— 那表示用户想整支冻结）
+        根因：`CLIPViTBackbone.__init__` 已按申报书 1.1(1) 冻好前 freeze_first_n_layers 层，
+        但 `apply_stage()` 第一句 `set_requires_grad(["all"], True)` 会把它们**全部解冻**；
+        而三个阶段（含 stage3 的 train: ["all"]）都要让 spatial 参与训练 ⇒
+        "冻结前 6 层"在**整个训练里都不生效**，且**不报错**。
+        判据（把相隔几十行的两行日志对起来看，才会发现自相矛盾）：
+            构造时  [CLIPViTBackbone] 冻结前 6/12 层，可训练参数 42.53M / 85.80M
+            进阶段  [stage1_cls_pretrain] 可训练参数 86.84M / 总计 90.53M   ← 实际是全骨干微调
+        连带后果：docs/00、docs/04、docs/08-C5 里"分类 ACC 卡 50% 就先检查
+        freeze_first_n_layers"这条排查建议是**死的**（照做不会有任何变化）。
+        本版之后，日志里应看到：
+            [CLIPViTBackbone] [阶段重放] 冻结前 6/12 层，可训练参数 42.53M / 85.80M
+            [stage2_loc_pretrain] 可训练参数 46.96M / 总计 90.53M     ← 约 47M，不再是 90M
+        想恢复"全骨干微调"（不做任何冻结）：把 configs 里 spatial.unfreeze_last_n_layers
+        改成 12（策略按 total - unfreeze_last_n 计算冻结层数，等于全解冻）。
+    · src/models/spatial_branch.py
+        `_apply_freeze_policy(tag="")` 增加 tag 参数，让日志能区分"构造时"与"阶段重放"。
+    · scripts/train.py（排查用开关，默认行为与旧版完全一致）
+        a) `--cudnn {on,off,bench}`：off → torch.backends.cudnn.enabled=False；
+           bench → benchmark=True。用于定位"某阶段单轮耗时异常慢"：
+           同一份权重、同一批数据各跑 20 个 batch，比较 iter 行耗时即可判断
+           是不是反向卷积掉进了慢路径（日志里通常先出现 CUDNN_STATUS_NOT_SUPPORTED）。
+        b) `--amp-dtype {bfloat16,float16}`：bf16 在部分 cuDNN 版本上卷积反向会
+           回退到极慢路径，可用 fp16 对照。
+        c) 启动时打印 cuDNN / amp_dtype 的实际取值 —— 否则"这次是哪套卷积实现跑的"
+           只存在于命令行历史里，事后无法对比两次 run 的耗时。
+    · scripts/cloud_autodl.sh
+        新增环境变量 CUDNN（on|off|bench），随 --cudnn 透传给 train.py。
+    · scripts/smoke_test.py
+        新增【10】骨干冻结策略在 apply_stage 之后仍生效（每阶段重放次数 /
+        train=[all] 的 stage3 也不解冻前 6 层 / 后 6 层仍可训练 /
+        --cudnn 取值校验 / 上云脚本透传）。自检 48/48 → **53/53**。
+
+[9] 2026-09-26 18:15 新增 —— 修「排查开关只是个摆设：声明了却没人读」（[8] 的即时补丁）
+    ★ 这不是新功能，是 [8] 自身带进来的缺陷。上一版给 --cudnn / --amp-dtype 做了
+      argparse 声明、写进了文档和自检，但**没有任何消费点**：
+      对 train.py 执行 `grep -n "args.cudnn"` 结果是**空**。
+      后果比"没有这个开关"严重得多 —— 用它做的对照实验会给出**反向结论**：
+      "开 cuDNN"与"关 cuDNN"两条探针耗时完全相同 ⇒ 被读成
+      "反向卷积掉进慢路径的假设被否定"，而真相是实验根本没做。
+      同一轮还查出同源的第二个坑（会导致启动即死）：
+      cloud_autodl.sh 的 runner 里写着 `--cudnn $CUDNN`，但 CUDNN **没有兜默认值**，
+      而 runner 是用**非引号 heredoc** 在生成时展开的 ⇒ 未设置时变空串，
+      行尾只剩一个裸的 `--cudnn`，argparse "expected one argument" 退出码 2。
+    · scripts/train.py
+        a) 新增模块级函数 `apply_runtime_flags(cfg, cudnn, amp_dtype)`：
+           off → torch.backends.cudnn.enabled=False；bench → benchmark=True；
+           amp_dtype → 写回 cfg["train"]["amp_dtype"]。
+           抽成可 import 的函数，就是为了让自检能直接断言**副作用**
+           （而不是只断言"命令没报错"）。
+        b) main() 里在 `--amp/--no-amp` 之后调用它 —— 此时模型还没建、
+           任何卷积都还没跑，改的是运行期全局状态与 cfg。
+    · scripts/cloud_autodl.sh
+        补 `CUDNN="${CUDNN:-on}"`，并写进环境变量表。
+    · scripts/smoke_test.py
+        【10】里把"参数在路上"升级成"参数被用上"：
+            --cudnn off    → 断言 torch.backends.cudnn.enabled 真的变 False
+            --amp-dtype    → 断言 cfg.train.amp_dtype 真的被改写
+            --cudnn bench  → 断言 benchmark 真的变 True
+            --cudnn on     → 断言不误改全局状态
+            正则断言 CUDNN="${CUDNN:-on}" 存在
+            自检 53/53 → **58/58**。
+
+[10] 2026-09-27 新增 —— 修「stage2 比 stage1 慢 8~14 倍」的真根因：
+     **bf16 的双线性上采样反向掉进慢路径（单次 2.9 s，fp32 只要 ~7 ms）**
+    ★ 这一条把"全量三段重跑"从"根本跑不完"变成"约 9 小时"，是能交付的前提。
+    · 根因（一句话）
+        `F.interpolate(mode="bilinear")` **不在 autocast 的 fp32 提升名单里**。
+        autocast 下 `d1` 是 bf16（conv 的输出就是 bf16）⇒ 定位支路那次
+        14²→224² 上采样按 **bf16** 执行 ⇒ CUDA 的
+        `aten::upsample_bilinear2d_backward` 对 bf16 走**未向量化的 atomicAdd 慢路径**：
+        单次 **2.9 s**（fp32 ~7 ms，差 400 倍）。
+        stage2 启用 loc/edge ⇒ 这条反向不被剪掉；stage1 只用 cls ⇒
+        定位支路的反向被 autograd **整段剪掉**（前向照跑）⇒ stage1 完全看不到。
+    · 证据链（`torch.profiler` 只包 backward，直接点名）
+        aten::upsample_bilinear2d_backward   4 次   CUDA 2.909 s   占 97.19%
+        其余全部算子合计仅 ~90 ms（conv_bwd 27.8 / BN 12.8 / mm 12.2 / flash-attn 2.4）
+        合成对照把触发条件钉死：fp32 输入 29.4 ms / **bf16 输入 2988.7 ms** /
+        `conv→interp`（interp 输入为 bf16）2977.3 ms / 同链 nearest 4.8 ms
+        ⚠ 早前 `scripts/bench_upsample.py` 测出 16.5 ms 就"排除上采样"是**假阴性** ——
+          它建的是 **fp32** 张量。**排除性微基准必须用真实 dtype 复现。**
+    · src/models/mobile_unetv2.py（★ 核心修复）
+        新增 `_bilinear_upsample_fp32(x, size)`：
+            with torch.autocast(device_type=x.device.type, enabled=False):
+                return F.interpolate(x.float(), size=size, mode="bilinear", align_corners=False)
+        两处调用全部改走它：MobileUNetV2 输出层那次 14²→224²（主凶）与
+        UpBlock 内的 2 倍上采样（再 `.to(skip.dtype)` 保证 cat 成立）。
+        下游 conv 在 autocast 下会自动转回 bf16 ⇒ **数值只更精确**，语义等价。
+    · 实测收益（`scripts/diag_seg.py` 同一把尺子）
+        stage2 bwd  3065.3 → **159.3 ms**（default）、2994.9 → **115.8 ms**（fused）
+        stage2 单步 3.13 s → **0.23 s（约 14 倍）**，且与 stage1 回到同一量级
+    · src/engine/trainer.py
+        a) 优化器优先用 **fused AdamW**：默认实现走 `_single_tensor_adam`，
+           每步对每个标量参数做一次 `.item()`（本模型实测 402 次/步），
+           fused 是 **0 次**。非 CUDA / 不可用时自动回退，并把所用路径写进日志。
+        b) `_monitor_value` 的 KeyError 增加一条最可能原因的提示
+           （"本轮验证集没有带掩码样本" / `--limit-batches` 截断验证集）。
+    · scripts/train.py
+        `--limit-batches` **只截训练集，不再截验证集**：验证集顺序是
+        ForenSynths(8000 张、无掩码) 在前、CASIAv2(1261 张、带掩码) 在后且
+        shuffle=False ⇒ 截断后前几百批**必然**没有掩码样本 ⇒ validate() 不产出
+        loc_* ⇒ stage2 的 monitor=val_loc_miou 抛 KeyError。
+        （验证集只有前向，跑满一轮约 40 s，冒烟完全付得起。）
+    · scripts/smoke_test.py
+        新增【11】上采样强制 fp32（行为断言：bf16 输入/autocast 下均返回 fp32；
+        AST 断言：两处调用均经由 helper、无裸 F.interpolate；优化器含 fused 分支）
+        与【12】`--limit-batches` 不截验证集（源码断言，含反向断言"训练集仍被限流"）。
+        自检 58/58 → **60/60**。
+        ⚠ 教训：源码断言**必须用 AST**，不能用正则 —— 该模块文档字符串里就写着
+        `` `F.interpolate(mode="bilinear")` ``，正则会把这句说明当成一处真实调用。
+    · docs/08_风险与坑清单.md
+        新增 **D43** 条目（含完整证据链、触发条件表与 5 条教训）。
+    · 新增探针（留在仓库里，供以后复现）
+        scripts/diag_seg.py（拆段计时：fwd/crit/bwd/clip/step）
+        scripts/diag_bwd.py（真图 detach 二分 —— ★ 必须 detach **输出**，
+                            冻参数 `requires_grad_(False)` **剪不断反向图**）
+        scripts/diag_bwd2.py（profiler 只包 backward + 合成对照）
+
+[1]~[5] 2026-09-24 那版已包含（分卷解压崩溃 / train 归位错层 / 空 split 误报 /
+    check_backbone 建议分流 / robustness 两个从未跑通的 bug / 自检 37→38 项）。
+    详情见 2026-09-24 版本的记录，此处不再重复。
+
+----------------------------------------------------------
+上传到云后（务必按这个顺序）
+----------------------------------------------------------
+    cd /root/autodl-tmp
+    md5sum vibnet_code.tar.gz      # 与清单 §1 的指纹逐位比对，不等就重传
+    tar -xzf vibnet_code.tar.gz    # 覆盖代码；data/ 与 pretrained/ 不受影响
+    cat vibnet-forgery-detector/VERSION.txt   # 能打印 = 换版成功
+    grep -n "monitor:" vibnet-forgery-detector/configs/default.yaml  # 应输出 4 行
+    grep -c "empty_batches" vibnet-forgery-detector/src/engine/trainer.py  # 17:20 那版起有（旧包为 0）
+    grep -c "_apply_freeze_policy" vibnet-forgery-detector/src/models/vibnet.py  # 本版新增（旧包为 0）
+    grep -c "cudnn" vibnet-forgery-detector/scripts/train.py                    # 本版新增（旧包为 0）
+    grep -c "_bilinear_upsample_fp32" vibnet-forgery-detector/src/models/mobile_unetv2.py  # [10] 应 = 6
+    grep -c "fused=True" vibnet-forgery-detector/src/engine/trainer.py                     # [10] 应 = 2
+
+  ✅ 本包**不含 checkpoints/ 与 outputs/**，解包不会覆盖你已训练的权重与日志。
+  ★ 本版把"冻结前 6 层"真正生效了（[8]），而云上已有的 stage1 权重是在
+    **全骨干微调**下训出来的 —— 两者不同源 ⇒ 建议归档旧 checkpoints 后
+    **从 stage1 干净重跑**（不要再 --start-stage 接着 stage2）：
+        cd /root/autodl-tmp/vibnet-forgery-detector
+        mkdir -p checkpoints/_old_fullft && mv checkpoints/*.pt checkpoints/_old_fullft/
+        bash scripts/cloud_autodl.sh train
+    提交报告时，"三阶段渐进式训练"这句话才与实际训练口径一致（stage1/2/3 冻结的
+    都只有骨干前 6 层 + patch/position embedding，后 6 层与全部新模块参与训练）。
+  ✅ **2026-09-27 23:05 已按上述口径实跑**：旧权重已归档到
+     `checkpoints/_old_fullft/`（诊断/冒烟产物在 `checkpoints/_diag/`），
+     当前正在跑的正是**从 stage1 起的三段全量训练**（`bash scripts/cloud_autodl.sh train`，
+     无 --start-stage）。日志 `outputs/gpu_train_log.txt`，结束后写 `outputs/RUN_REPORT.txt`，
+     AUTOSHUTDOWN=1（正常结束才关机；非正常退出会保留实例供排查）。
+     stage1 首轮日志确认为 `[阶段重放] 冻结前 6/12 层` + `可训练参数 43.57M / 总计 90.53M`
+     （而不是旧口径的 86.84M），说明 [8] 的修复真的生效了。
+     实测速度约 **0.132 s/iter**（修复前 stage2 为 3.13 s/iter）⇒ 约 7 分钟/轮，
+     三阶段 70 轮合计约 **9 小时**。
+  ⚠️ 若一定要省掉 stage1（--start-stage），务必知道代价：旧 stage1 是在骨干
+     全部解冻、lr=1e-4、batch=16 下训的（相当于每样本有效学习率是论文的 8 倍），
+     预训练特征有可能已经被带偏，之后的"冻结"只是把偏移固化下来。
+  ⚠️ 别往 /root/autodl-tmp/vibnet-forgery-detector/ 里拖包，要拖到 /root/autodl-tmp/
+  ⚠️ JupyterLab 拖拽同名文件会弹「Replace?」，必须点覆盖
+  ⚠️ 千万不要重跑 `cloud_autodl.sh data` —— 分卷已删，会重下 70GB

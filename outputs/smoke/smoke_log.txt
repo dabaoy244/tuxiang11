@@ -1,0 +1,117 @@
+[2026-09-17 15:25:05] ======================================================================
+[2026-09-17 15:25:05] 阶段 1/3: stage1_cls_pretrain  epochs=1  lr=1.0e-04->1.0e-06
+[2026-09-17 15:25:05]   可训练参数 30.15M / 总计 33.84M | 冻结=['localization'] | 训练=['spatial', 'freq', 'fusion', 'vib', 'cls_head'] | 任务=['cls']
+[2026-09-17 15:25:24]     iter 3/6  loss=-1.3774  19.2s
+[2026-09-17 15:25:38]     iter 6/6  loss=-1.0123  33.4s
+[2026-09-17 15:25:38] [stage1_cls_pretrain] epoch 1/1 (global 0) lr=1.00e-06 beta=0.000 loss=-1.0123 raw={'vib': 0.672} (33.4s)
+[2026-09-17 15:26:07] ======================================================================
+[2026-09-17 15:26:07] 阶段 1/3: stage1_cls_pretrain  epochs=1  lr=1.0e-04->1.0e-06
+[2026-09-17 15:26:07]   可训练参数 30.15M / 总计 33.84M | 冻结=['localization'] | 训练=['spatial', 'freq', 'fusion', 'vib', 'cls_head'] | 任务=['cls']
+[2026-09-17 15:26:21]     iter 3/6  loss=-1.3774  14.5s
+[2026-09-17 15:26:34]     iter 6/6  loss=-1.0123  27.3s
+[2026-09-17 15:26:34] [stage1_cls_pretrain] epoch 1/1 (global 0) lr=1.00e-06 beta=0.000 loss=-1.0123 raw={'vib': 0.672} (27.3s)
+[2026-09-17 15:26:39]     val: loss=0.5469  cls_acc=0.6667  cls_precision=0.6667  cls_recall=1.0000  cls_f1=0.8000  cls_auc=0.8047  cls_ap=0.8901  cls_mAP=0.8901  cls_tn=0.0000  cls_fp=8.0000  cls_fn=0.0000  cls_tp=16.0000  cls_n=24.0000  val_loss=0.5469  loc_miou=0.0000  loc_miou_per_sample=0.0000  loc_pixel_acc=0.6519  loc_dice=0.0000  loc_f1=0.0000  loc_n_pixels=1204224.0000
+[2026-09-17 15:26:39]     ✔ 新的最佳 val_total=-0.5469，已保存 best.pt
+[2026-09-17 15:26:39] ======================================================================
+[2026-09-17 15:26:39] 阶段 2/3: stage2_loc_pretrain  epochs=1  lr=5.0e-05->5.0e-07
+[2026-09-17 15:26:39]   可训练参数 33.54M / 总计 33.84M | 冻结=['vib', 'cls_head'] | 训练=['spatial', 'freq', 'fusion', 'localization'] | 任务=['loc', 'edge']
+[2026-09-17 15:26:51]     iter 3/6  loss=-2.7019  12.2s
+[2026-09-17 15:27:03]     iter 6/6  loss=-2.8292  23.8s
+[2026-09-17 15:27:03] [stage2_loc_pretrain] epoch 1/1 (global 1) lr=5.00e-07 beta=0.000 loss=-2.8292 raw={'bce': 0.6351, 'dice': 0.7418, 'edge': 0.5413} (23.8s)
+[2026-09-17 15:27:07]     val: loss=10.4006  cls_acc=0.6667  cls_precision=0.6667  cls_recall=1.0000  cls_f1=0.8000  cls_auc=0.8203  cls_ap=0.9027  cls_mAP=0.9027  cls_tn=0.0000  cls_fp=8.0000  cls_fn=0.0000  cls_tp=16.0000  cls_n=24.0000  val_loss=10.4006  loc_miou=0.0000  loc_miou_per_sample=0.0000  loc_pixel_acc=0.6519  loc_dice=0.0000  loc_f1=0.0000  loc_n_pixels=1204224.0000
+[2026-09-17 15:27:07] ======================================================================
+[2026-09-17 15:27:07] 阶段 3/3: stage3_joint_finetune  epochs=1  lr=1.0e-05->1.0e-07
+[2026-09-17 15:27:07]   可训练参数 33.84M / 总计 33.84M | 冻结=[] | 训练=['all'] | 任务=['cls', 'loc', 'edge']
+[2026-09-17 15:27:18]     iter 3/6  loss=-3.4801  11.7s
+[2026-09-17 15:27:32]     iter 6/6  loss=-2.7477  25.1s
+[2026-09-17 15:27:32] [stage3_joint_finetune] epoch 1/1 (global 2) lr=1.00e-07 beta=0.010 loss=-2.7477 raw={'vib': 0.6614, 'bce': 0.5745, 'dice': 0.7297, 'edge': 0.5285} (25.1s)
+[2026-09-17 15:27:37]     val: loss=5.5433  cls_acc=0.6667  cls_precision=0.6667  cls_recall=1.0000  cls_f1=0.8000  cls_auc=0.8672  cls_ap=0.9318  cls_mAP=0.9318  cls_tn=0.0000  cls_fp=8.0000  cls_fn=0.0000  cls_tp=16.0000  cls_n=24.0000  val_loss=5.5433  loc_miou=0.0000  loc_miou_per_sample=0.0000  loc_pixel_acc=0.6519  loc_dice=0.0000  loc_f1=0.0000  loc_n_pixels=1204224.0000
+[2026-09-17 15:27:37] 训练历史已写入 D:\picture\vibnet-forgery-detector\outputs\smoke\history.json
+[2026-09-17 15:28:16] ======================================================================
+[2026-09-17 15:28:16] 阶段 1/3: stage1_cls_pretrain  epochs=1  lr=1.0e-04->1.0e-06
+[2026-09-17 15:28:16]   可训练参数 30.15M / 总计 33.84M | 冻结=['localization'] | 训练=['spatial', 'freq', 'fusion', 'vib', 'cls_head'] | 任务=['cls']
+[2026-09-17 15:28:30]     iter 3/6  loss=-1.4155  13.8s
+[2026-09-17 15:28:41]     iter 6/6  loss=-1.1188  25.2s
+[2026-09-17 15:28:41] [stage1_cls_pretrain] epoch 1/1 (global 0) lr=1.00e-06 beta=0.000 loss=-1.1188 raw={'vib': 0.6458} (25.2s)
+[2026-09-17 15:28:46]     val: loss=0.7963  cls_acc=0.7500  cls_precision=0.7273  cls_recall=1.0000  cls_f1=0.8421  cls_auc=0.8516  cls_ap=0.9330  cls_mAP=0.9330  cls_tn=2.0000  cls_fp=6.0000  cls_fn=0.0000  cls_tp=16.0000  cls_n=24.0000  val_loss=0.7963  loc_miou=0.0000  loc_miou_per_sample=0.0000  loc_pixel_acc=0.6519  loc_dice=0.0000  loc_f1=0.0000  loc_n_pixels=1204224.0000
+[2026-09-17 15:28:46]     ✔ 新的最佳 val_total=-0.7963，已保存 best.pt
+[2026-09-17 15:28:46] ======================================================================
+[2026-09-17 15:28:46] 阶段 2/3: stage2_loc_pretrain  epochs=1  lr=5.0e-05->5.0e-07
+[2026-09-17 15:28:46]   可训练参数 33.54M / 总计 33.84M | 冻结=['vib', 'cls_head'] | 训练=['spatial', 'freq', 'fusion', 'localization'] | 任务=['loc', 'edge']
+[2026-09-17 15:29:01]     iter 3/6  loss=-1.6032  14.6s
+[2026-09-17 15:29:16]     iter 6/6  loss=-1.8435  29.2s
+[2026-09-17 15:29:16] [stage2_loc_pretrain] epoch 1/1 (global 1) lr=5.00e-07 beta=0.000 loss=-1.8435 raw={'bce': 0.6192, 'dice': 0.7856, 'edge': 0.915} (29.2s)
+[2026-09-17 15:29:20]     val: loss=-19.7191  cls_acc=0.6667  cls_precision=0.6667  cls_recall=1.0000  cls_f1=0.8000  cls_auc=0.8125  cls_ap=0.9070  cls_mAP=0.9070  cls_tn=0.0000  cls_fp=8.0000  cls_fn=0.0000  cls_tp=16.0000  cls_n=24.0000  val_loss=-19.7191  loc_miou=0.0000  loc_miou_per_sample=0.0000  loc_pixel_acc=0.6519  loc_dice=0.0000  loc_f1=0.0000  loc_n_pixels=1204224.0000
+[2026-09-17 15:29:21]     ✔ 新的最佳 val_total=19.7191，已保存 best.pt
+[2026-09-17 15:29:21] ======================================================================
+[2026-09-17 15:29:21] 阶段 3/3: stage3_joint_finetune  epochs=1  lr=1.0e-05->1.0e-07
+[2026-09-17 15:29:21]   可训练参数 33.84M / 总计 33.84M | 冻结=[] | 训练=['all'] | 任务=['cls', 'loc', 'edge']
+[2026-09-17 15:29:36]     iter 3/6  loss=-2.6615  14.9s
+[2026-09-17 15:29:52]     iter 6/6  loss=-2.1144  31.3s
+[2026-09-17 15:29:52] [stage3_joint_finetune] epoch 1/1 (global 2) lr=1.00e-07 beta=0.010 loss=-2.1144 raw={'vib': 0.6387, 'bce': 0.5583, 'dice': 0.7691, 'edge': 0.8957} (31.3s)
+[2026-09-17 15:29:57]     val: loss=-8.7974  cls_acc=0.6667  cls_precision=0.6667  cls_recall=1.0000  cls_f1=0.8000  cls_auc=0.8359  cls_ap=0.9203  cls_mAP=0.9203  cls_tn=0.0000  cls_fp=8.0000  cls_fn=0.0000  cls_tp=16.0000  cls_n=24.0000  val_loss=-8.7974  loc_miou=0.0000  loc_miou_per_sample=0.0000  loc_pixel_acc=0.6519  loc_dice=0.0000  loc_f1=0.0000  loc_n_pixels=1204224.0000
+[2026-09-17 15:29:57] 训练历史已写入 D:\picture\vibnet-forgery-detector\outputs\smoke\history.json
+[2026-09-17 15:31:52] ======================================================================
+[2026-09-17 15:31:52] 阶段 1/3: stage1_cls_pretrain  epochs=1  lr=1.0e-04->1.0e-06
+[2026-09-17 15:31:52]   可训练参数 30.15M / 总计 33.84M | 冻结=['localization'] | 训练=['spatial', 'freq', 'fusion', 'vib', 'cls_head'] | 任务=['cls']
+[2026-09-17 15:33:06]     iter 3/6  loss=-1.4155  74.7s
+[2026-09-17 15:34:21]     iter 6/6  loss=-1.1188  149.3s
+[2026-09-17 15:34:21] [stage1_cls_pretrain] epoch 1/1 (global 0) lr=1.00e-06 beta=0.000 loss=-1.1188 raw={'vib': 0.6458} (149.3s)
+[2026-09-17 15:34:44]     val: loss=0.7963  cls_acc=0.7500  cls_precision=0.7273  cls_recall=1.0000  cls_f1=0.8421  cls_auc=0.8516  cls_ap=0.9330  cls_mAP=0.9330  cls_tn=2.0000  cls_fp=6.0000  cls_fn=0.0000  cls_tp=16.0000  cls_n=24.0000  val_loss=0.7963  loc_miou=0.0000  loc_miou_per_sample=0.0000  loc_pixel_acc=0.6519  loc_dice=0.0000  loc_f1=0.0000  loc_n_pixels=1204224.0000
+[2026-09-17 15:34:45]     ✔ 新的最佳 val_total=-0.7963，已保存 best.pt
+[2026-09-17 15:34:45] ======================================================================
+[2026-09-17 15:34:45] 阶段 2/3: stage2_loc_pretrain  epochs=1  lr=5.0e-05->5.0e-07
+[2026-09-17 15:34:45]   可训练参数 33.54M / 总计 33.84M | 冻结=['vib', 'cls_head'] | 训练=['spatial', 'freq', 'fusion', 'localization'] | 任务=['loc', 'edge']
+[2026-09-17 15:36:13]     iter 3/6  loss=-1.6032  88.0s
+[2026-09-17 15:37:53]     iter 6/6  loss=-1.8435  188.9s
+[2026-09-17 15:37:53] [stage2_loc_pretrain] epoch 1/1 (global 1) lr=5.00e-07 beta=0.000 loss=-1.8435 raw={'bce': 0.6192, 'dice': 0.7856, 'edge': 0.915} (188.9s)
+[2026-09-17 15:38:16]     val: loss=-19.7191  cls_acc=0.6667  cls_precision=0.6667  cls_recall=1.0000  cls_f1=0.8000  cls_auc=0.8125  cls_ap=0.9070  cls_mAP=0.9070  cls_tn=0.0000  cls_fp=8.0000  cls_fn=0.0000  cls_tp=16.0000  cls_n=24.0000  val_loss=-19.7191  loc_miou=0.0000  loc_miou_per_sample=0.0000  loc_pixel_acc=0.6519  loc_dice=0.0000  loc_f1=0.0000  loc_n_pixels=1204224.0000
+[2026-09-17 15:38:16]     ✔ 新的最佳 val_total=19.7191，已保存 best.pt
+[2026-09-17 15:38:16] ======================================================================
+[2026-09-17 15:38:16] 阶段 3/3: stage3_joint_finetune  epochs=1  lr=1.0e-05->1.0e-07
+[2026-09-17 15:38:16]   可训练参数 33.84M / 总计 33.84M | 冻结=[] | 训练=['all'] | 任务=['cls', 'loc', 'edge']
+[2026-09-17 15:39:44]     iter 3/6  loss=-2.6615  88.3s
+[2026-09-17 15:40:34]     iter 6/6  loss=-2.1144  138.2s
+[2026-09-17 15:40:34] [stage3_joint_finetune] epoch 1/1 (global 2) lr=1.00e-07 beta=0.010 loss=-2.1144 raw={'vib': 0.6387, 'bce': 0.5583, 'dice': 0.7691, 'edge': 0.8957} (138.2s)
+[2026-09-17 15:40:38]     val: loss=-8.7974  cls_acc=0.6667  cls_precision=0.6667  cls_recall=1.0000  cls_f1=0.8000  cls_auc=0.8359  cls_ap=0.9203  cls_mAP=0.9203  cls_tn=0.0000  cls_fp=8.0000  cls_fn=0.0000  cls_tp=16.0000  cls_n=24.0000  val_loss=-8.7974  loc_miou=0.0000  loc_miou_per_sample=0.0000  loc_pixel_acc=0.6519  loc_dice=0.0000  loc_f1=0.0000  loc_n_pixels=1204224.0000
+[2026-09-17 15:40:38] 训练历史已写入 D:\picture\vibnet-forgery-detector\outputs\smoke\history.json
+[2026-09-25 17:21:53] ======================================================================
+[2026-09-25 17:21:53] 阶段 1/3: stage1_cls_pretrain  epochs=1  lr=1.0e-04->1.0e-06  监控=val_cls_auc
+[2026-09-25 17:21:53]   可训练参数 86.84M / 总计 90.53M | 冻结=['localization'] | 训练=['spatial', 'freq', 'fusion', 'vib', 'cls_head'] | 任务=['cls']
+[2026-09-25 17:21:53]     [opt] 已把不确定性加权参数 1 组（log σ²）纳入优化器
+[2026-09-25 17:22:47]     iter 3/18  loss=1.1168  54.7s
+[2026-09-25 17:23:35]     iter 6/18  loss=1.0969  102.3s
+[2026-09-25 17:24:21]     iter 9/18  loss=0.7046  148.6s
+[2026-09-25 17:25:05]     iter 12/18  loss=0.6241  192.3s
+[2026-09-25 17:25:59]     iter 15/18  loss=0.5785  246.9s
+[2026-09-25 17:26:50]     iter 18/18  loss=0.5564  297.4s
+[2026-09-25 17:26:50] [stage1_cls_pretrain] epoch 1/1 (global 0) lr=1.00e-06 beta=0.000 loss=0.5564 raw={'vib': 0.6547} (297.4s)
+[2026-09-25 17:27:23]     val: loss=1.5289  cls_acc=0.6667  cls_precision=0.6667  cls_recall=1.0000  cls_f1=0.8000  cls_auc=0.6067  cls_ap=0.8216  cls_mAP=0.8216  cls_tn=0.0000  cls_fp=15.0000  cls_fn=0.0000  cls_tp=30.0000  cls_n=45.0000  val_loss=1.5289  loc_miou=0.0000  loc_miou_per_sample=0.0000  loc_miou_tampered_only=0.0000  loc_n_tampered=30.0000  loc_pixel_acc=0.6429  loc_dice=0.0000  loc_f1=0.0000  loc_n_pixels=2207744.0000
+[2026-09-25 17:27:24]     ✔ 新的最佳 val_cls_auc=0.6067，已保存 best.pt
+[2026-09-25 17:27:24] ======================================================================
+[2026-09-25 17:27:24] 阶段 2/3: stage2_loc_pretrain  epochs=1  lr=5.0e-05->5.0e-07  监控=val_loc_miou
+[2026-09-25 17:27:24]   可训练参数 90.23M / 总计 90.53M | 冻结=['vib', 'cls_head'] | 训练=['spatial', 'freq', 'fusion', 'localization'] | 任务=['loc', 'edge']
+[2026-09-25 17:27:24]     [opt] 已把不确定性加权参数 1 组（log σ²）纳入优化器
+[2026-09-25 17:28:34]     iter 3/18  loss=-0.6381  69.2s
+[2026-09-25 17:29:45]     iter 6/18  loss=-2.0577  140.8s
+[2026-09-25 17:31:28]     iter 9/18  loss=-2.1228  243.6s
+[2026-09-25 17:32:11]     iter 12/18  loss=-2.0747  286.4s
+[2026-09-25 17:32:40]     iter 15/18  loss=-1.9315  315.7s
+[2026-09-25 17:33:08]     iter 18/18  loss=-1.9053  343.2s
+[2026-09-25 17:33:08] [stage2_loc_pretrain] epoch 1/1 (global 1) lr=5.00e-07 beta=0.000 loss=-1.9053 raw={'bce': 0.5773, 'dice': 0.7554, 'edge': 0.7424} (343.2s)
+[2026-09-25 17:33:24]     val: loss=-0.9060  cls_acc=0.6667  cls_precision=0.6667  cls_recall=1.0000  cls_f1=0.8000  cls_auc=0.5889  cls_ap=0.7984  cls_mAP=0.7984  cls_tn=0.0000  cls_fp=15.0000  cls_fn=0.0000  cls_tp=30.0000  cls_n=45.0000  val_loss=-0.9060  loc_miou=0.0000  loc_miou_per_sample=0.0000  loc_miou_tampered_only=0.0000  loc_n_tampered=30.0000  loc_pixel_acc=0.6429  loc_dice=0.0000  loc_f1=0.0000  loc_n_pixels=2207744.0000
+[2026-09-25 17:33:24]     ✔ 新的最佳 val_loc_miou=0.0000，已保存 best.pt
+[2026-09-25 17:33:25] ======================================================================
+[2026-09-25 17:33:25] 阶段 3/3: stage3_joint_finetune  epochs=1  lr=1.0e-05->1.0e-07  监控=val_cls_auc
+[2026-09-25 17:33:25]   可训练参数 90.53M / 总计 90.53M | 冻结=[] | 训练=['all'] | 任务=['cls', 'loc', 'edge']
+[2026-09-25 17:33:25]     [opt] 已把不确定性加权参数 1 组（log σ²）纳入优化器
+[2026-09-25 17:33:52]     iter 3/18  loss=-1.1406  27.3s
+[2026-09-25 17:34:19]     iter 6/18  loss=-1.1971  54.1s
+[2026-09-25 17:34:47]     iter 9/18  loss=-1.2190  81.8s
+[2026-09-25 17:35:11]     iter 12/18  loss=-1.1648  105.9s
+[2026-09-25 17:35:35]     iter 15/18  loss=-0.9313  130.0s
+[2026-09-25 17:35:59]     iter 18/18  loss=-1.0861  153.8s
+[2026-09-25 17:35:59] [stage3_joint_finetune] epoch 1/1 (global 2) lr=1.00e-07 beta=0.010 loss=-1.0861 raw={'vib': 0.6767, 'bce': 0.4856, 'dice': 0.7339, 'edge': 0.6954} (153.8s)
+[2026-09-25 17:36:13]     val: loss=-0.0345  cls_acc=0.6667  cls_precision=0.6667  cls_recall=1.0000  cls_f1=0.8000  cls_auc=0.6800  cls_ap=0.8551  cls_mAP=0.8551  cls_tn=0.0000  cls_fp=15.0000  cls_fn=0.0000  cls_tp=30.0000  cls_n=45.0000  val_loss=-0.0345  loc_miou=0.4126  loc_miou_per_sample=0.2156  loc_miou_tampered_only=0.2228  loc_n_tampered=30.0000  loc_pixel_acc=0.7837  loc_dice=0.5841  loc_f1=0.5841  loc_n_pixels=2207744.0000
+[2026-09-25 17:36:14]     ✔ 新的最佳 val_cls_auc=0.6800，已保存 best.pt
+[2026-09-25 17:36:14] 训练历史已写入 D:\picture\vibnet-forgery-detector\outputs\smoke\history.json

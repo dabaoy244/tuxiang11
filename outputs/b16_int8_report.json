@@ -1,0 +1,22 @@
+{
+  "source": "deploy/b16.onnx",
+  "quantized": "deploy/b16_int8.onnx",
+  "size_fp32_MB": 346.3,
+  "size_int8_MB": 88.6,
+  "shape": [
+    1,
+    3,
+    224,
+    224
+  ],
+  "numeric_check": {
+    "out0_max_abs_diff": 6.482750177383423e-05,
+    "out0_rel_to_peak": 0.007773322053253651,
+    "out1_max_abs_diff": 4.718080163002014e-05,
+    "out1_rel_to_peak": 0.0023651542142033577,
+    "out2_max_abs_diff": 2.5600194931030273e-05,
+    "out2_rel_to_peak": 0.00015252904267981648,
+    "worst_rel_to_peak": 0.007773322053253651,
+    "pass": 1.0
+  }
+}

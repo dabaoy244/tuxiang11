@@ -1,0 +1,14 @@
+[
+  {
+    "model": "lite.onnx",
+    "size_MB": 94.6,
+    "latency_ms": 64.7,
+    "fps": 15.45
+  },
+  {
+    "model": "lite_simplified.onnx",
+    "size_MB": 94.1,
+    "latency_ms": 70.9,
+    "fps": 14.11
+  }
+]

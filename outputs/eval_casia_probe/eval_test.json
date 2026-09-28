@@ -1,0 +1,52 @@
+{
+  "split": "test",
+  "ckpt": "checkpoints/abp_best.pt",
+  "device": "cpu",
+  "cls": {
+    "acc": 0.5125,
+    "precision": 0.5098039215686274,
+    "recall": 0.65,
+    "f1": 0.5714285714285715,
+    "auc": 0.49203125,
+    "ap": 0.5618364056235475,
+    "mAP": 0.5618364056235475,
+    "tn": 60,
+    "fp": 100,
+    "fn": 56,
+    "tp": 104,
+    "n": 320
+  },
+  "loc": {
+    "miou": 0.0,
+    "miou_per_sample": 0.0,
+    "miou_tampered_only": 0.0,
+    "n_tampered": 160,
+    "pixel_acc": 0.9559837497010523,
+    "dice": 0.0,
+    "f1": 0.0,
+    "n_pixels": 16056320
+  },
+  "n_loc_samples": 320,
+  "loc_absent_reason": null,
+  "perf": {
+    "latency_ms_per_image": 823.854917187498,
+    "fps": 1.2138059494914852,
+    "model_params_M": 90.530772,
+    "model_fp32_MB": 362.123088
+  },
+  "targets": {
+    "ForenSynths 检测准确率 >= 91%": null,
+    "CASIAv2 篡改定位 mIoU >= 56%": false,
+    "CPU 推理 >= 8 张/秒(224x224)": false,
+    "模型体积 <= 120MB": false
+  },
+  "miou_conventions": {
+    "miou": 0.0,
+    "miou_tampered_only": 0.0,
+    "miou_per_sample": 0.0,
+    "n_tampered": 160,
+    "判定所用口径": "miou_tampered_only（含篡改区域的图逐图平均，文献标准）",
+    "说明": "另外两个口径仅作参考；**不要挑最高的那个报**。"
+  },
+  "is_synthetic_demo": false
+}

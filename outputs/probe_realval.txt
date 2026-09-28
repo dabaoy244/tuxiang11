@@ -1,0 +1,36 @@
+[train] 设备：cpu
+[train] 训练集 3200 张，验证集 1600 张
+  spatial(M)         21.677
+  freq(M)            0.044
+  fusion(M)          0.309
+  vib(M)             0.148
+  cls_head(M)        0.025
+  localization(M)    2.297
+  total(M)           24.500
+  trainable(M)       24.500
+  fp32_size(MB)      98.001
+[2026-09-18 10:05:21] ======================================================================
+[2026-09-18 10:05:21] 阶段 1/1: stage1_cls_pretrain  epochs=8  lr=1.0e-04->1.0e-06
+[2026-09-18 10:05:21]   可训练参数 22.20M / 总计 24.50M | 冻结=['localization'] | 训练=['spatial', 'freq', 'fusion', 'vib', 'cls_head'] | 任务=['cls']
+[2026-09-18 10:05:39] [stage1_cls_pretrain] epoch 1/8 (global 0) lr=9.62e-05 beta=0.000 loss=-0.4508 raw={'vib': 0.7296} (15.4s)
+[2026-09-18 10:05:44]     val: loss=-2.0577  cls_acc=0.4062  cls_precision=0.4062  cls_recall=1.0000  cls_f1=0.5778  cls_auc=0.4453  cls_ap=0.4269  cls_mAP=0.4269  cls_tn=0.0000  cls_fp=19.0000  cls_fn=0.0000  cls_tp=13.0000  cls_n=32.0000  val_loss=-2.0577
+[2026-09-18 10:05:44]     ✔ 新的最佳 val_cls_acc=2.0577，已保存 best.pt
+[2026-09-18 10:05:55] [stage1_cls_pretrain] epoch 2/8 (global 1) lr=8.55e-05 beta=0.000 loss=-1.0950 raw={'vib': 0.6885} (10.3s)
+[2026-09-18 10:05:59]     val: loss=-0.7673  cls_acc=0.4062  cls_precision=0.4062  cls_recall=1.0000  cls_f1=0.5778  cls_auc=0.4656  cls_ap=0.4783  cls_mAP=0.4783  cls_tn=0.0000  cls_fp=19.0000  cls_fn=0.0000  cls_tp=13.0000  cls_n=32.0000  val_loss=-0.7673
+[2026-09-18 10:06:08] [stage1_cls_pretrain] epoch 3/8 (global 2) lr=6.94e-05 beta=0.000 loss=-0.8815 raw={'vib': 0.6726} (9.2s)
+[2026-09-18 10:06:12]     val: loss=-0.4522  cls_acc=0.4062  cls_precision=0.4062  cls_recall=1.0000  cls_f1=0.5778  cls_auc=0.5101  cls_ap=0.5617  cls_mAP=0.5617  cls_tn=0.0000  cls_fp=19.0000  cls_fn=0.0000  cls_tp=13.0000  cls_n=32.0000  val_loss=-0.4522
+[2026-09-18 10:06:20] [stage1_cls_pretrain] epoch 4/8 (global 3) lr=5.05e-05 beta=0.000 loss=-0.7932 raw={'vib': 0.6538} (8.2s)
+[2026-09-18 10:06:24]     val: loss=-0.2224  cls_acc=0.4062  cls_precision=0.4062  cls_recall=1.0000  cls_f1=0.5778  cls_auc=0.4899  cls_ap=0.5182  cls_mAP=0.5182  cls_tn=0.0000  cls_fp=19.0000  cls_fn=0.0000  cls_tp=13.0000  cls_n=32.0000  val_loss=-0.2224
+[2026-09-18 10:06:32] [stage1_cls_pretrain] epoch 5/8 (global 4) lr=3.16e-05 beta=0.000 loss=-0.3647 raw={'vib': 0.6791} (8.1s)
+[2026-09-18 10:06:37]     val: loss=-0.1462  cls_acc=0.4062  cls_precision=0.4062  cls_recall=1.0000  cls_f1=0.5778  cls_auc=0.4737  cls_ap=0.5128  cls_mAP=0.5128  cls_tn=0.0000  cls_fp=19.0000  cls_fn=0.0000  cls_tp=13.0000  cls_n=32.0000  val_loss=-0.1462
+[2026-09-18 10:06:45] [stage1_cls_pretrain] epoch 6/8 (global 5) lr=1.55e-05 beta=0.000 loss=0.0769 raw={'vib': 0.7158} (8.4s)
+[2026-09-18 10:06:49]     val: loss=-0.1705  cls_acc=0.4062  cls_precision=0.4062  cls_recall=1.0000  cls_f1=0.5778  cls_auc=0.4777  cls_ap=0.5128  cls_mAP=0.5128  cls_tn=0.0000  cls_fp=19.0000  cls_fn=0.0000  cls_tp=13.0000  cls_n=32.0000  val_loss=-0.1705
+[2026-09-18 10:06:58] [stage1_cls_pretrain] epoch 7/8 (global 6) lr=4.77e-06 beta=0.000 loss=0.0014 raw={'vib': 0.7113} (8.8s)
+[2026-09-18 10:07:02]     val: loss=-0.1476  cls_acc=0.4062  cls_precision=0.4062  cls_recall=1.0000  cls_f1=0.5778  cls_auc=0.4818  cls_ap=0.5131  cls_mAP=0.5131  cls_tn=0.0000  cls_fp=19.0000  cls_fn=0.0000  cls_tp=13.0000  cls_n=32.0000  val_loss=-0.1476
+[2026-09-18 10:07:10] [stage1_cls_pretrain] epoch 8/8 (global 7) lr=1.00e-06 beta=0.000 loss=-0.2857 raw={'vib': 0.6804} (8.3s)
+[2026-09-18 10:07:15]     val: loss=-0.1038  cls_acc=0.4062  cls_precision=0.4062  cls_recall=1.0000  cls_f1=0.5778  cls_auc=0.4818  cls_ap=0.5162  cls_mAP=0.5162  cls_tn=0.0000  cls_fp=19.0000  cls_fn=0.0000  cls_tp=13.0000  cls_n=32.0000  val_loss=-0.1038
+[2026-09-18 10:07:15] 训练历史已写入 D:\picture\vibnet-forgery-detector\outputs/run_realval\history.json
+
+[train] 完成。最佳 val_cls_acc=2.0577 @ epoch 0
+[train] 权重目录：D:\picture\vibnet-forgery-detector\checkpoints
+[train] 日志：D:\picture\vibnet-forgery-detector\outputs/run_realval/train_log.txt

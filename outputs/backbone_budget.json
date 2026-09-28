@@ -1,0 +1,86 @@
+{
+  "image_size": 224,
+  "runs": 10,
+  "rows": [
+    {
+      "config": "default.yaml",
+      "variant": "b16",
+      "params_M": 90.53,
+      "fp32_MB": 362.1,
+      "torch_cpu_ms": 597.9,
+      "torch_cpu_fps": 1.67,
+      "meets_size_120MB": false,
+      "meets_cpu_8fps": false
+    },
+    {
+      "config": "default.yaml",
+      "variant": "s16",
+      "params_M": 26.2,
+      "fp32_MB": 104.8,
+      "torch_cpu_ms": 390.1,
+      "torch_cpu_fps": 2.56,
+      "meets_size_120MB": true,
+      "meets_cpu_8fps": false
+    },
+    {
+      "config": "default.yaml",
+      "variant": "ti16",
+      "params_M": 9.96,
+      "fp32_MB": 39.8,
+      "torch_cpu_ms": 372.0,
+      "torch_cpu_fps": 2.69,
+      "meets_size_120MB": true,
+      "meets_cpu_8fps": false
+    },
+    {
+      "config": "default.yaml",
+      "variant": "ti8",
+      "params_M": 8.18,
+      "fp32_MB": 32.7,
+      "torch_cpu_ms": 231.0,
+      "torch_cpu_fps": 4.33,
+      "meets_size_120MB": true,
+      "meets_cpu_8fps": false
+    },
+    {
+      "config": "lite.yaml",
+      "variant": "b16",
+      "params_M": 88.78,
+      "fp32_MB": 355.1,
+      "torch_cpu_ms": 598.3,
+      "torch_cpu_fps": 1.67,
+      "meets_size_120MB": false,
+      "meets_cpu_8fps": false
+    },
+    {
+      "config": "lite.yaml",
+      "variant": "s16",
+      "params_M": 24.5,
+      "fp32_MB": 98.0,
+      "torch_cpu_ms": 392.4,
+      "torch_cpu_fps": 2.55,
+      "meets_size_120MB": true,
+      "meets_cpu_8fps": false
+    },
+    {
+      "config": "lite.yaml",
+      "variant": "ti16",
+      "params_M": 8.29,
+      "fp32_MB": 33.1,
+      "torch_cpu_ms": 350.7,
+      "torch_cpu_fps": 2.85,
+      "meets_size_120MB": true,
+      "meets_cpu_8fps": false
+    },
+    {
+      "config": "lite.yaml",
+      "variant": "ti8",
+      "params_M": 6.51,
+      "fp32_MB": 26.0,
+      "torch_cpu_ms": 353.1,
+      "torch_cpu_fps": 2.83,
+      "meets_size_120MB": true,
+      "meets_cpu_8fps": false
+    }
+  ]
+}

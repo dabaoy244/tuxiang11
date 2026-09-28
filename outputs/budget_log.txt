@@ -1,0 +1,10 @@
+[budget] 输入 224x224，PyTorch CPU，batch=1，10 次取均值
+  default.yaml     b16     90.53 M    362.1 MB    597.9 ms    1.67 img/s  体积✗ 速度✗
+  default.yaml     s16     26.20 M    104.8 MB    390.1 ms    2.56 img/s  体积✓ 速度✗
+  default.yaml     ti16     9.96 M     39.8 MB    372.0 ms    2.69 img/s  体积✓ 速度✗
+  default.yaml     ti8      8.18 M     32.7 MB    231.0 ms    4.33 img/s  体积✓ 速度✗
+  lite.yaml        b16     88.78 M    355.1 MB    598.3 ms    1.67 img/s  体积✗ 速度✗
+  lite.yaml        s16     24.50 M     98.0 MB    392.4 ms    2.55 img/s  体积✓ 速度✗
+  lite.yaml        ti16     8.29 M     33.1 MB    350.7 ms    2.85 img/s  体积✓ 速度✗
+  lite.yaml        ti8      6.51 M     26.0 MB    353.1 ms    2.83 img/s  体积✓ 速度✗
+[budget] 已写入 outputs/backbone_budget.json

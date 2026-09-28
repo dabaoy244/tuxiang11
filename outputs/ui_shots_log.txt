@@ -1,0 +1,82 @@
+[shots] 真实数据集样本 8 张：
+        data\Datasets\ForenSynths\val\airplane\0_real\00091.png
+        data\Datasets\ForenSynths\val\airplane\0_real\00430.png
+        data\Datasets\ForenSynths\val\airplane\0_real\00592.png
+        data\Datasets\ForenSynths\val\airplane\0_real\00759.png
+        data\Datasets\ForenSynths\val\airplane\1_fake\00091.png
+        data\Datasets\ForenSynths\val\airplane\1_fake\00430.png
+        data\Datasets\ForenSynths\val\airplane\1_fake\00592.png
+        data\Datasets\ForenSynths\val\airplane\1_fake\00759.png
+[shots] 构建主窗口（离屏）…
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+[shots] 模型配置：configs/lite.yaml
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+QFontDatabase: Cannot find font directory C:/Users/Administrator/.workbuddy/binaries/python/envs/default/Lib/site-packages/PyQt5/Qt5/lib/fonts.
+Note that Qt no longer ships fonts. Deploy some (from https://dejavu-fonts.github.io/ for example) or switch to fontconfig.
+This plugin does not support propagateSizeHints()
+This plugin does not support propagateSizeHints()
+  [shot] 01_主界面_初始状态.png              1391x860  13 KB  OK  五大模块布局
+[shots] 等待模型加载…
+This plugin does not support propagateSizeHints()

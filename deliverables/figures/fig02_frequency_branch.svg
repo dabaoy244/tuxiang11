@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 620" width="1100" height="620" font-family="Microsoft YaHei, Segoe UI, sans-serif">
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#3b4351"/></marker>
+  </defs>
+  <rect width="1100" height="620" fill="#ffffff"/>
+  <text x="28" y="38" font-size="22" font-weight="700" fill="#1c2026">图 2 · 频域分支：幅值—相位联合表征 + 可学习频域掩码</text>
+  <text x="28" y="62" font-size="13" fill="#6e7680">本分支实测仅 0.044 M 参数，占全模型 0.2%　｜　对应申报书公式 (4)–(12)</text>
+
+  <!-- 图像输入 -->
+  <rect x="28" y="250" width="104" height="72" rx="9" fill="#f2f5f9" stroke="#3b4351" stroke-width="1.5"/>
+  <text x="80" y="278" font-size="13" font-weight="700" fill="#1c2026" text-anchor="middle">I(x,y)</text>
+  <text x="80" y="298" font-size="10.5" fill="#6e7680" text-anchor="middle">224×224</text>
+  <text x="80" y="313" font-size="10.5" fill="#6e7680" text-anchor="middle">公式 4</text>
+
+  <!-- DFT -->
+  <rect x="152" y="220" width="126" height="132" rx="9" fill="#f2f8f4" stroke="#1e8449" stroke-width="1.5"/>
+  <text x="215" y="248" font-size="12.5" font-weight="700" fill="#1e8449" text-anchor="middle">2D-DFT + 移频</text>
+  <text x="215" y="270" font-size="10.5" fill="#6e7680" text-anchor="middle">F(u,v) → F_shift(u,v)</text>
+  <text x="215" y="292" font-size="10.5" fill="#3b4351" text-anchor="middle">分离复数谱：</text>
+  <text x="215" y="312" font-size="11" fill="#1c2026" text-anchor="middle">A = |F_shift|（公式 5）</text>
+  <text x="215" y="332" font-size="11" fill="#1c2026" text-anchor="middle">P = arg(F_shift)（公式 6）</text>
+
+  <!-- 幅值 / 相位 -->
+  <rect x="310" y="176" width="118" height="56" rx="8" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="369" y="199" font-size="12.5" font-weight="700" fill="#1c2026" text-anchor="middle">幅值谱 A</text>
+  <text x="369" y="217" font-size="10" fill="#6e7680" text-anchor="middle">能量分布</text>
+  <rect x="310" y="340" width="118" height="56" rx="8" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="369" y="363" font-size="12.5" font-weight="700" fill="#1c2026" text-anchor="middle">相位谱 P</text>
+  <text x="369" y="381" font-size="10" fill="#6e7680" text-anchor="middle">结构 / 位置信息</text>
+
+  <!-- 可学习掩码 -->
+  <rect x="310" y="256" width="118" height="66" rx="8" fill="#fff8e6" stroke="#c47814" stroke-width="1.5"/>
+  <text x="369" y="277" font-size="11.5" font-weight="700" fill="#9a5f10" text-anchor="middle">可学习频域掩码</text>
+  <text x="369" y="295" font-size="10" fill="#6e7680" text-anchor="middle">Conv 5×5 ×2（32→1）</text>
+  <text x="369" y="313" font-size="10" fill="#9a5f10" text-anchor="middle">σ(·) → M ∈ [0,1]（公式 7）</text>
+
+  <!-- 逐元素乘 -->
+  <rect x="462" y="176" width="94" height="56" rx="8" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="509" y="200" font-size="11.5" font-weight="700" fill="#1c2026" text-anchor="middle">A′ = A ⊙ M</text>
+  <text x="509" y="218" font-size="10" fill="#6e7680" text-anchor="middle">公式 8</text>
+  <rect x="462" y="340" width="94" height="56" rx="8" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="509" y="364" font-size="11.5" font-weight="700" fill="#1c2026" text-anchor="middle">P′ = P ⊙ M</text>
+  <text x="509" y="382" font-size="10" fill="#6e7680" text-anchor="middle">公式 9</text>
+
+  <!-- 双路 CNN -->
+  <rect x="590" y="150" width="150" height="108" rx="9" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="665" y="174" font-size="12" font-weight="700" fill="#1c2026" text-anchor="middle">CNN_amp（2 层 3×3）</text>
+  <text x="665" y="194" font-size="10.5" fill="#6e7680" text-anchor="middle">通道 32 → 128</text>
+  <text x="665" y="214" font-size="10.5" fill="#6e7680" text-anchor="middle">GAP ↓（公式 10）</text>
+  <text x="665" y="240" font-size="11.5" font-weight="700" fill="#c62828" text-anchor="middle">F_amp ∈ R^128</text>
+
+  <rect x="590" y="314" width="150" height="108" rx="9" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="665" y="338" font-size="12" font-weight="700" fill="#1c2026" text-anchor="middle">CNN_phase（2 层 3×3）</text>
+  <text x="665" y="358" font-size="10.5" fill="#6e7680" text-anchor="middle">通道 32 → 128</text>
+  <text x="665" y="378" font-size="10.5" fill="#6e7680" text-anchor="middle">GAP ↓（公式 11）</text>
+  <text x="665" y="404" font-size="11.5" font-weight="700" fill="#1e8449" text-anchor="middle">F_phase ∈ R^128</text>
+
+  <!-- 拼接 -->
+  <rect x="780" y="240" width="140" height="92" rx="9" fill="#f3f4fb" stroke="#3b4351" stroke-width="1.5"/>
+  <text x="850" y="266" font-size="12.5" font-weight="700" fill="#1c2026" text-anchor="middle">通道拼接</text>
+  <text x="850" y="289" font-size="11" fill="#1c2026" text-anchor="middle">F_freq = Concat</text>
+  <text x="850" y="308" font-size="11" fill="#1c2026" text-anchor="middle">∈ R^256（公式 12）</text>
+  <text x="850" y="325" font-size="10" fill="#6e7680" text-anchor="middle">→ 送入 CS-CAM</text>
+
+  <!-- 箭头 -->
+  <path d="M132,286 L150,286" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+  <path d="M278,236 L308,206" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+  <path d="M278,336 L308,366" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+  <path d="M369,232 L369,254" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+  <path d="M369,366 L369,338" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+  <path d="M428,204 L460,204" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+  <path d="M428,289 L444,289 L444,204" stroke="#3b4351" stroke-width="1.4" fill="none"/>
+  <path d="M428,368 L460,368" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+  <path d="M428,289 L444,289 L444,368" stroke="#3b4351" stroke-width="1.4" fill="none"/>
+  <path d="M556,204 L588,204" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+  <path d="M556,368 L588,368" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+  <path d="M740,204 L764,204 L764,266 L778,266" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+  <path d="M740,368 L764,368 L764,306 L778,306" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#a)"/>
+
+  <!-- 说明 -->
+  <rect x="28" y="440" width="892" height="150" rx="10" fill="#f7f9fc" stroke="#c9ccd2"/>
+  <text x="44" y="466" font-size="13" font-weight="700" fill="#1c2026">设计要点（与现有频域方法的差异）</text>
+  <text x="44" y="490" font-size="11.5" fill="#3b4351">① 掩码可学习：以 2 层卷积从幅值谱生成自适应权重，替代传统"固定中频掩码"，可自动定位不同生成器伪影最显著的频段。</text>
+  <text x="44" y="512" font-size="11.5" fill="#3b4351">② 幅相双路：现有方法多只用幅值；本分支同时建模相位谱，构成 256 维融合特征。相位的定量贡献由消融实验实测（不引用无出处的倍数）。</text>
+  <text x="44" y="534" font-size="11.5" fill="#3b4351">③ 极低成本：本分支 0.044 M 参数（全模型 0.2%），"引入相位支路"的计算代价可忽略。</text>
+  <text x="44" y="558" font-size="11.5" fill="#c62828">⚠ 实现口径：公式 (7) 的掩码张量必须带 batch 与通道维，即 M ∈ [0,1]^(B×1×224×224)，否则无法与幅值/相位谱做逐元素相乘。</text>
+  <text x="44" y="580" font-size="11.5" fill="#9a5f10">⚠ 相位谱在计算中需保持数值稳定（-π..π 区间）；dft_mode 可切 "torch"/"numpy" 两种实现，两者结果已对拍一致。</text>
+</svg>

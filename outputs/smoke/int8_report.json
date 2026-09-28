@@ -1,0 +1,22 @@
+{
+  "source": "deploy/smoke_simplified.onnx",
+  "quantized": "deploy/smoke_int8.onnx",
+  "size_fp32_MB": 129.7,
+  "size_int8_MB": 33.6,
+  "shape": [
+    1,
+    3,
+    224,
+    224
+  ],
+  "numeric_check": {
+    "out0_max_abs_diff": 0.00017622113227844238,
+    "out0_rel_to_peak": 0.0022045362275093794,
+    "out1_max_abs_diff": 0.0002803802490234375,
+    "out1_rel_to_peak": 0.0011513965437188745,
+    "out2_max_abs_diff": 0.0007759705185890198,
+    "out2_rel_to_peak": 0.010344317182898521,
+    "worst_rel_to_peak": 0.010344317182898521,
+    "pass": 1.0
+  }
+}

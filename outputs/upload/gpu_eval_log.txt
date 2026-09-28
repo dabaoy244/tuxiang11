@@ -1,0 +1,202 @@
+[2026-09-28 20:46:59] ===== 评测 A：混合 test 集（分类 + 推理性能）=====
+<frozen runpy>:128: RuntimeWarning: 'src.evaluation.evaluate' found in sys.modules after import of package 'src.evaluation', but prior to execution of 'src.evaluation.evaluate'; this may result in unpredictable behaviour
+[CLIPViTBackbone] 冻结前 6/12 层，可训练参数 42.53M / 85.80M
+[eval] 已加载 checkpoints/vibnet_best.pt
+[TamperDataset] CASIAv2/train: 载入 10090 条（篡改 4098 / 真实 5992，掩码 10090 个）
+[data] ⚠ split=train：配置了 1 个数据集但**一个样本都没有**，已跳过 —— ['COVERAGE(train)']
+[data]   这不会报错，但意味着这些数据**没有参与**这次训练/评测。请核对 data/Datasets/ 下的目录名与布局。
+  · COVERAGE/train：/root/autodl-tmp/vibnet-forgery-detector/data/Datasets/COVERAGE 不存在（数据还没下？）
+[data] split=train 共 46000 条 ← ForenSynths(train) 40000 条、CASIAv2(train) 6000 条
+[TamperDataset] CASIAv2/val: 载入 1261 条（篡改 512 / 真实 749，掩码 1261 个）
+[data] ⚠ split=val：配置了 1 个数据集但**一个样本都没有**，已跳过 —— ['COVERAGE(val)']
+[data]   这不会报错，但意味着这些数据**没有参与**这次训练/评测。请核对 data/Datasets/ 下的目录名与布局。
+  · COVERAGE/val：/root/autodl-tmp/vibnet-forgery-detector/data/Datasets/COVERAGE 不存在（数据还没下？）
+[data] split=val   共 9261 条 ← ForenSynths(val) 8000 条、CASIAv2(val) 1261 条
+[TamperDataset] CASIAv2/test: 载入 1263 条（篡改 513 / 真实 750，掩码 1263 个）
+[data] ⚠ split=test：配置了 1 个数据集但**一个样本都没有**，已跳过 —— ['COVERAGE(test)']
+[data]   这不会报错，但意味着这些数据**没有参与**这次训练/评测。请核对 data/Datasets/ 下的目录名与布局。
+  · COVERAGE/test：/root/autodl-tmp/vibnet-forgery-detector/data/Datasets/COVERAGE 不存在（数据还没下？）
+[data] split=test  共 21263 条 ← ForenSynths(test) 20000 条、CASIAv2(test) 1263 条
+libpng warning: iCCP: profile 'ICC Profile': 'desc': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'wtpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bkpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmnd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmdd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'vued': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'view': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'lumi': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'meas': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'tech': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 1000000h: invalid rendering intent
+libpng warning: iCCP: profile 'ICC Profile': 'desc': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'wtpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bkpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmnd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmdd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'vued': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'view': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'lumi': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'meas': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'tech': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'desc': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'wtpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bkpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmnd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmdd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'vued': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'view': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'lumi': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'meas': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'tech': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'desc': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'wtpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bkpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmnd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmdd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'vued': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'view': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'lumi': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'meas': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'tech': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 0h: PCS illuminant is not D50
+libpng warning: iCCP: profile 'ICC Profile': 1000000h: invalid rendering intent
+libpng warning: iCCP: profile 'ICC Profile': 'desc': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'wtpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bkpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmnd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmdd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'vued': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'view': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'lumi': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'meas': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'tech': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'desc': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'wtpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bkpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmnd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmdd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'vued': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'view': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'lumi': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'meas': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'tech': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 1000000h: invalid rendering intent
+libpng warning: iCCP: profile 'ICC Profile': 'GRAY': Gray color space not permitted on RGB PNG
+libpng warning: iCCP: profile 'ICC Profile': 'desc': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'wtpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bkpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmnd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmdd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'vued': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'view': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'lumi': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'meas': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'tech': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 1000000h: invalid rendering intent
+[eval] 结果已写入 outputs/eval_full/eval_test.json
+==============================================================
+评测报告  split=test  device=cuda
+==============================================================
+【真伪检测指标】
+  ACC=0.7621   Precision=0.6905   Recall=0.9404
+  F1=0.7963   AUC=0.9051   AP(mAP)=0.8975
+  TP=9886 FP=4432 FN=627 TN=6318
+【篡改定位指标】（三种 mIoU 口径都列出，报哪个必须写明）
+  ① 池化 mIoU（像素加权，最宽松）        = 0.4570
+  ② 仅篡改图 mIoU（文献标准，★判定用）  = 0.2668   （n_tampered=513）
+  ③ 全部非空图 mIoU（含误报，最严格）    = 0.2525
+  Pixel Acc=0.9748   Dice=0.6273   F1=0.6273
+  评测样本数=1263
+【推理性能】
+  单张延迟=0.45 ms   吞吐=2220.28 张/秒
+  参数量=90.53 M   FP32 体积≈362.1 MB
+  ⚠ 三种 mIoU 口径差异较大（池化 0.457 / 仅篡改图 0.267 / 全部非空图 0.253）。原因是池化口径**按像素加权**（大篡改区域主导），不是『真实图全零掩码按 IoU=1 计入』——后者是错的，全零图是被跳过的。论文请报 miou_tampered_only 并注明口径；不要挑最高的那个报。
+【申报书预期指标核对】
+  [无数据] ForenSynths 检测准确率 >= 91%
+  [未达标] CASIAv2 篡改定位 mIoU >= 56%
+  [达标] CPU 推理 >= 8 张/秒(224x224)
+  [未达标] 模型体积 <= 120MB
+==============================================================
+[2026-09-28 20:48:55] ===== 评测 B：CASIAv2 单数据集（定位 mIoU 判定口径）=====
+<frozen runpy>:128: RuntimeWarning: 'src.evaluation.evaluate' found in sys.modules after import of package 'src.evaluation', but prior to execution of 'src.evaluation.evaluate'; this may result in unpredictable behaviour
+[eval] 已把 test_sets 限定为 CASIAv2
+[CLIPViTBackbone] 冻结前 6/12 层，可训练参数 42.53M / 85.80M
+[eval] 已加载 checkpoints/vibnet_best.pt
+[TamperDataset] CASIAv2/train: 载入 10090 条（篡改 4098 / 真实 5992，掩码 10090 个）
+[data] ⚠ split=train：配置了 1 个数据集但**一个样本都没有**，已跳过 —— ['COVERAGE(train)']
+[data]   这不会报错，但意味着这些数据**没有参与**这次训练/评测。请核对 data/Datasets/ 下的目录名与布局。
+  · COVERAGE/train：/root/autodl-tmp/vibnet-forgery-detector/data/Datasets/COVERAGE 不存在（数据还没下？）
+[data] split=train 共 46000 条 ← ForenSynths(train) 40000 条、CASIAv2(train) 6000 条
+[TamperDataset] CASIAv2/val: 载入 1261 条（篡改 512 / 真实 749，掩码 1261 个）
+[data] ⚠ split=val：配置了 1 个数据集但**一个样本都没有**，已跳过 —— ['COVERAGE(val)']
+[data]   这不会报错，但意味着这些数据**没有参与**这次训练/评测。请核对 data/Datasets/ 下的目录名与布局。
+  · COVERAGE/val：/root/autodl-tmp/vibnet-forgery-detector/data/Datasets/COVERAGE 不存在（数据还没下？）
+[data] split=val   共 9261 条 ← ForenSynths(val) 8000 条、CASIAv2(val) 1261 条
+[TamperDataset] CASIAv2/test: 载入 1263 条（篡改 513 / 真实 750，掩码 1263 个）
+[data] split=test  共 1263 条 ← CASIAv2(test) 1263 条
+[eval] 结果已写入 outputs/eval_casia/eval_test.json
+==============================================================
+评测报告  split=test  device=cuda
+==============================================================
+【真伪检测指标】
+  ACC=0.9382   Precision=0.9035   Recall=0.9493
+  F1=0.9259   AUC=0.9847   AP(mAP)=0.9738
+  TP=487 FP=52 FN=26 TN=698
+【篡改定位指标】（三种 mIoU 口径都列出，报哪个必须写明）
+  ① 池化 mIoU（像素加权，最宽松）        = 0.4570
+  ② 仅篡改图 mIoU（文献标准，★判定用）  = 0.2668   （n_tampered=513）
+  ③ 全部非空图 mIoU（含误报，最严格）    = 0.2525
+  Pixel Acc=0.9748   Dice=0.6273   F1=0.6273
+  评测样本数=1263
+【推理性能】
+  单张延迟=1.15 ms   吞吐=867.26 张/秒
+  参数量=90.53 M   FP32 体积≈362.1 MB
+  ⚠ 三种 mIoU 口径差异较大（池化 0.457 / 仅篡改图 0.267 / 全部非空图 0.253）。原因是池化口径**按像素加权**（大篡改区域主导），不是『真实图全零掩码按 IoU=1 计入』——后者是错的，全零图是被跳过的。论文请报 miou_tampered_only 并注明口径；不要挑最高的那个报。
+【申报书预期指标核对】
+  [无数据] ForenSynths 检测准确率 >= 91%
+  [未达标] CASIAv2 篡改定位 mIoU >= 56%
+  [达标] CPU 推理 >= 8 张/秒(224x224)
+  [未达标] 模型体积 <= 120MB
+==============================================================

@@ -1,0 +1,12 @@
+[font] 正文=CN-song  标题=CN-hei
+
+[1/2] 生成源程序文档…
+  [check] 每页可见代码行最少 52 行（≥50 ✅）
+  → docs/copyright\源程序文档_空频双分支 AI 图像篡改检测系统V1.0.pdf
+     60 页  渲染 6078 行  333.6 KB
+
+[2/2] 生成软件说明书…
+  → docs/copyright\软件说明书_空频双分支 AI 图像篡改检测系统V1.0.pdf
+     10 页  935.9 KB
+
+[done] 输出目录：docs/copyright

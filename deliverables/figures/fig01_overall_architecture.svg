@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 820" width="1240" height="820" font-family="Microsoft YaHei, Segoe UI, sans-serif">
+  <defs>
+    <marker id="ar" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#3b4351"/>
+    </marker>
+    <marker id="arR" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#c62828"/>
+    </marker>
+    <marker id="arG" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 z" fill="#1e8449"/>
+    </marker>
+  </defs>
+
+  <rect width="1240" height="820" fill="#ffffff"/>
+  <text x="30" y="40" font-size="24" font-weight="700" fill="#1c2026">图 1 · 空频双分支轻量 VIB-Net 总体架构</text>
+  <text x="30" y="66" font-size="13.5" fill="#6e7680">输入 224×224×3　｜　特征层：空域分支 + 频域分支 → CS-CAM 自适应融合　｜　推理层：分层 VIB 分类支路 + Mobile-UNetv2 定位支路　｜　应用层：ONNX 简化 → 桌面工具</text>
+
+  <!-- 输入 -->
+  <rect x="30" y="360" width="120" height="96" rx="10" fill="#f2f5f9" stroke="#3b4351" stroke-width="1.6"/>
+  <text x="90" y="392" font-size="14" font-weight="700" fill="#1c2026" text-anchor="middle">输入图像</text>
+  <text x="90" y="414" font-size="12" fill="#6e7680" text-anchor="middle">224×224×3</text>
+  <text x="90" y="436" font-size="11" fill="#6e7680" text-anchor="middle">RGB / 归一化</text>
+
+  <!-- 空域分支 -->
+  <rect x="185" y="150" width="330" height="150" rx="12" fill="#fdf6f6" stroke="#c62828" stroke-width="1.5"/>
+  <text x="200" y="174" font-size="14.5" font-weight="700" fill="#c62828">空域分支（高层语义 + 局部纹理）</text>
+  <rect x="200" y="186" width="140" height="46" rx="7" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="270" y="206" font-size="12" font-weight="700" fill="#1c2026" text-anchor="middle">ViT-B/16 骨干</text>
+  <text x="270" y="223" font-size="10.5" fill="#6e7680" text-anchor="middle">冻结前 6 层 / 微调后 6 层</text>
+  <rect x="355" y="186" width="145" height="46" rx="7" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="427" y="206" font-size="12" font-weight="700" fill="#1c2026" text-anchor="middle">3 层深度可分离卷积</text>
+  <text x="427" y="223" font-size="10.5" fill="#6e7680" text-anchor="middle">32→64→128 + GAP</text>
+  <text x="270" y="252" font-size="11" fill="#3b4351" text-anchor="middle">φ(x) ∈ R^768　（公式 1）</text>
+  <text x="427" y="252" font-size="11" fill="#3b4351" text-anchor="middle">F_local ∈ R^128　（公式 2）</text>
+  <rect x="200" y="262" width="300" height="28" rx="7" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="350" y="281" font-size="11.5" fill="#1c2026" text-anchor="middle">F_spa = Concat(φ, F_local) ∈ R^896 ←→ R^(896×14×14)　（公式 3）</text>
+
+  <!-- 频域分支 -->
+  <rect x="185" y="330" width="400" height="176" rx="12" fill="#f2f8f4" stroke="#1e8449" stroke-width="1.5"/>
+  <text x="200" y="354" font-size="14.5" font-weight="700" fill="#1e8449">频域分支（幅相联合 + 可学习掩码）</text>
+  <rect x="200" y="366" width="82" height="42" rx="7" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="241" y="383" font-size="11.5" font-weight="700" fill="#1c2026" text-anchor="middle">2D-DFT</text>
+  <text x="241" y="399" font-size="10" fill="#6e7680" text-anchor="middle">移频（公式 4）</text>
+  <rect x="294" y="366" width="86" height="42" rx="7" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="337" y="383" font-size="11.5" font-weight="700" fill="#1c2026" text-anchor="middle">幅值谱 A</text>
+  <text x="337" y="399" font-size="10" fill="#6e7680" text-anchor="middle">公式 5</text>
+  <rect x="294" y="414" width="86" height="42" rx="7" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="337" y="431" font-size="11.5" font-weight="700" fill="#1c2026" text-anchor="middle">相位谱 P</text>
+  <text x="337" y="447" font-size="10" fill="#6e7680" text-anchor="middle">公式 6</text>
+  <rect x="394" y="366" width="96" height="90" rx="7" fill="#fff8e6" stroke="#c47814" stroke-width="1.4"/>
+  <text x="442" y="388" font-size="11.5" font-weight="700" fill="#9a5f10" text-anchor="middle">可学习频域掩码</text>
+  <text x="442" y="407" font-size="10" fill="#6e7680" text-anchor="middle">2 层卷积 5×5</text>
+  <text x="442" y="422" font-size="10" fill="#6e7680" text-anchor="middle">32→1 + Sigmoid</text>
+  <text x="442" y="441" font-size="10" fill="#9a5f10" text-anchor="middle">M ∈ [0,1]^(B×1×224×224)</text>
+  <rect x="504" y="366" width="66" height="90" rx="7" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="537" y="398" font-size="11" font-weight="700" fill="#1c2026" text-anchor="middle">A′ = A⊙M</text>
+  <text x="537" y="420" font-size="11" font-weight="700" fill="#1c2026" text-anchor="middle">P′ = P⊙M</text>
+  <text x="537" y="441" font-size="10" fill="#6e7680" text-anchor="middle">公式 8 / 9</text>
+  <text x="250" y="478" font-size="11" fill="#3b4351">双路 CNN（各 2 层 3×3，32→128）→ GAP → F_amp / F_phase ∈ R^128（公式 10/11）</text>
+  <text x="250" y="496" font-size="11" fill="#3b4351">F_freq = Concat(F_amp, F_phase) ∈ R^256（公式 12）　★ 频域分支实测仅 0.044 M 参数（占全模型 0.2%）</text>
+
+  <!-- CS-CAM -->
+  <rect x="620" y="238" width="196" height="182" rx="12" fill="#f3f4fb" stroke="#3b4351" stroke-width="1.5"/>
+  <text x="718" y="264" font-size="14" font-weight="700" fill="#1c2026" text-anchor="middle">CS-CAM 交叉注意力融合</text>
+  <rect x="636" y="278" width="164" height="30" rx="6" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="718" y="298" font-size="11" fill="#1c2026" text-anchor="middle">1×1 Conv 统一到 512 维（公式 13/14）</text>
+  <rect x="636" y="316" width="76" height="44" rx="6" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="674" y="336" font-size="11" font-weight="700" fill="#1c2026" text-anchor="middle">通道注意力</text>
+  <text x="674" y="352" font-size="9.5" fill="#6e7680" text-anchor="middle">GAP+GMP→共享MLP</text>
+  <rect x="724" y="316" width="76" height="44" rx="6" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="762" y="336" font-size="11" font-weight="700" fill="#1c2026" text-anchor="middle">空间注意力</text>
+  <text x="762" y="352" font-size="9.5" fill="#6e7680" text-anchor="middle">沿通道池化→7×7 Conv</text>
+  <rect x="636" y="372" width="164" height="30" rx="6" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="718" y="392" font-size="11" fill="#1c2026" text-anchor="middle">F_fusion = F″spa + F″freq ∈ R^512（公式 15–17）</text>
+
+  <!-- 梯度门控 -->
+  <rect x="850" y="248" width="118" height="160" rx="10" fill="#fffdf5" stroke="#c47814" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="909" y="276" font-size="12.5" font-weight="700" fill="#9a5f10" text-anchor="middle">梯度门控</text>
+  <text x="909" y="296" font-size="10.5" fill="#6e7680" text-anchor="middle">GS1 / GS2</text>
+  <text x="909" y="318" font-size="10" fill="#6e7680" text-anchor="middle">任务级可配置门控</text>
+  <text x="909" y="338" font-size="10" fill="#6e7680" text-anchor="middle">默认均关闭</text>
+  <text x="909" y="364" font-size="10" fill="#9a5f10" text-anchor="middle">硬隔离由三阶段</text>
+  <text x="909" y="380" font-size="10" fill="#9a5f10" text-anchor="middle">参数冻结承担</text>
+  <text x="909" y="398" font-size="9.5" fill="#6e7680" text-anchor="middle">零额外计算开销</text>
+
+  <!-- 分类支路 -->
+  <rect x="1000" y="120" width="212" height="176" rx="12" fill="#fdf6f6" stroke="#c62828" stroke-width="1.5"/>
+  <text x="1106" y="146" font-size="14" font-weight="700" fill="#c62828" text-anchor="middle">分类支路（图像级）</text>
+  <rect x="1016" y="160" width="180" height="60" rx="7" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="1106" y="180" font-size="11.5" font-weight="700" fill="#1c2026" text-anchor="middle">分层 VIB 信息瓶颈</text>
+  <text x="1106" y="196" font-size="10" fill="#6e7680" text-anchor="middle">MLP 512→256 → μ, σ(Softplus)</text>
+  <text x="1106" y="211" font-size="10" fill="#6e7680" text-anchor="middle">重参数 z = μ + ε·σ（公式 20–23）</text>
+  <rect x="1016" y="230" width="180" height="32" rx="7" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="1106" y="250" font-size="11" fill="#1c2026" text-anchor="middle">MLP 256→128→2 → Softmax（公式 27）</text>
+  <text x="1106" y="280" font-size="11" fill="#3b4351" text-anchor="middle">输出：真 / 伪造 概率</text>
+
+  <!-- 定位支路 -->
+  <rect x="1000" y="322" width="212" height="200" rx="12" fill="#f2f8f4" stroke="#1e8449" stroke-width="1.5"/>
+  <text x="1106" y="348" font-size="14" font-weight="700" fill="#1e8449" text-anchor="middle">定位支路（像素级）</text>
+  <rect x="1016" y="362" width="180" height="56" rx="7" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="1106" y="382" font-size="11.5" font-weight="700" fill="#1c2026" text-anchor="middle">Mobile-UNetv2（2.297 M）</text>
+  <text x="1106" y="399" font-size="10" fill="#6e7680" text-anchor="middle">倒残差 4 块 + 双线性上采样跳连</text>
+  <text x="1106" y="412" font-size="10" fill="#6e7680" text-anchor="middle">输入 F_spa ∈ R^(896×14×14)（未过 VIB）</text>
+  <rect x="1016" y="428" width="180" height="32" rx="7" fill="#ffffff" stroke="#c9ccd2"/>
+  <text x="1106" y="448" font-size="11" fill="#1c2026" text-anchor="middle">1×1 Conv + Sigmoid → 224×224×1（公式 28）</text>
+  <text x="1106" y="480" font-size="10.5" fill="#3b4351" text-anchor="middle">附加 Canny 边缘监督（公式 29）</text>
+  <text x="1106" y="499" font-size="10" fill="#6e7680" text-anchor="middle">低阈值 50 / 高阈值 150</text>
+
+  <!-- 箭头 -->
+  <path d="M150,390 L180,390 L180,225 L198,225" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+  <path d="M150,408 L180,408 L180,420 L198,420" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+  <path d="M500,225 L560,225 L560,300 L632,300" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+  <path d="M500,430 L560,430 L560,372 L632,372" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+  <path d="M816,300 L844,300" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+  <path d="M816,372 L844,372" stroke="#3b4351" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+  <path d="M968,290 L996,250" stroke="#c62828" stroke-width="1.6" fill="none" marker-end="url(#arR)"/>
+  <path d="M968,382 L996,400" stroke="#1e8449" stroke-width="1.6" fill="none" marker-end="url(#arG)"/>
+
+  <!-- 底部：三阶段与损失 -->
+  <rect x="30" y="560" width="1180" height="102" rx="12" fill="#f7f9fc" stroke="#c9ccd2"/>
+  <text x="46" y="586" font-size="13.5" font-weight="700" fill="#1c2026">三阶段分任务训练（§3.7）</text>
+  <text x="46" y="610" font-size="11.5" fill="#3b4351">① 分类预训练 0–20 轮（冻结定位支路，AdamW 1e-4→1e-6）　② 定位预训练 20–40 轮（冻结 VIB/分类头，5e-5→5e-7）　③ 联合微调 40–70 轮（全部解冻，1e-5→1e-7）</text>
+  <text x="46" y="634" font-size="11.5" fill="#3b4351">损失：Z-score 归一化（公式 30）+ 同方差不确定性加权（公式 31） ｜ β 退火 0→0.1（第 20–40 轮线性） ｜ KL 裁剪 [0,10] 前向裁剪+反向恒等 ｜ 梯度 L2 裁剪 5.0</text>
+  <text x="46" y="654" font-size="11.5" fill="#c62828">★ 三个创新点对应的实测参数量占比：频域分支 0.2% + VIB 0.6% + CS-CAM 1.3% = 2.1%（其余为骨干与定位头）</text>
+
+  <!-- 应用层 -->
+  <rect x="30" y="686" width="1180" height="104" rx="12" fill="#f2f8f4" stroke="#1e8449" stroke-width="1.4"/>
+  <text x="46" y="712" font-size="13.5" font-weight="700" fill="#1e8449">应用层：ONNX 导出 → 算子简化 → 桌面工具（实测）</text>
+  <text x="46" y="737" font-size="11.5" fill="#3b4351">onnxsim 简化 + 动态 INT8 → lite 档 <tspan font-weight="700">98.7 MB</tspan>（≤120MB ✅）　｜　ONNX Runtime FP32 / 224×224 / batch=1 / Intel 第 13 代 7 逻辑核 → <tspan font-weight="700">9.46 ~ 11.22 张/秒</tspan>（≥8 ✅）</text>
+  <text x="46" y="761" font-size="11.5" fill="#3b4351">PyQt5 离线桌面工具五大模块：图像输入（单张/批量/拖拽）· 检测处理（异步推理）· 结果展示（原图+热力图+报告）· 结果导出（PDF/PNG）· 系统设置（阈值/路径/设备）</text>
+  <text x="46" y="781" font-size="11" fill="#9a5f10">注：本机 CPU 无 VNNI 指令，动态 INT8 只压缩体积、不提升速度（105.7 ms → 298.6 ms），速度收益取决于目标平台指令集。</text>
+</svg>

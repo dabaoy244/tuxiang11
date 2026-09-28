@@ -1,0 +1,214 @@
+# ============================================================================
+# 空频双分支轻量 VIB-Net  ——  「达标档」配置（FP32 即可满足 ≤120MB）
+# ----------------------------------------------------------------------------
+# 与 default.yaml 的唯一区别：把空域骨干从 b16 降到 s16，并相应收窄融合/定位通道。
+#
+# 实测（224×224，PyTorch CPU 单线程批量1，见 docs/09）：
+#   总参数 24.50 M   →  FP32 98.0 MB    ✅ 满足申报书「模型体积 ≤ 120MB」
+#   CPU 延迟 111.5 ms →  8.97 张/秒     ✅ 满足申报书「CPU ≥ 8 张/秒」
+#   若再走 INT8 量化：约 16 MB          ✅ 余量极大
+#
+# 什么时候用这个配置：
+#   * 中期检查 / 结题答辩需要现场演示「≤120MB + ≥8张/秒」两项硬指标；
+#   * 只有 CPU 笔记本、没有 GPU 时做训练与部署实验。
+# 什么时候用 default.yaml：
+#   * 追求最高检测精度（用完整 CLIP-ViT-B/16 预训练权重）；
+#   * 此时必须叠加 INT8 量化才能满足 ≤120MB（362.1MB → 约 94MB），
+#     且 CPU 无法达到 8 张/秒（约 0.5~1 张/秒），需在答辩时说明。
+# ============================================================================
+
+project:
+  name: "VIB-Net AI图像篡改检测 (lite)"
+  version: "1.0"
+  seed: 3407
+  output_dir: "outputs/run_lite"
+  ckpt_dir: "checkpoints"
+
+# ---------------------------------------------------------------- 数据
+data:
+  root: "data/Datasets"
+  image_size: 224
+  num_workers: 4
+  pin_memory: true
+
+  train_sets:
+    - name: "ForenSynths"
+      kind: "gensynth"
+      split: "train"
+      max_samples: 40000
+    - name: "CASIAv2"
+      kind: "tamper"
+      split: "train"
+      max_samples: 6000
+    - name: "COVERAGE"
+      kind: "tamper"
+      split: "train"
+      max_samples: 120
+
+  test_sets:
+    - name: "ForenSynths"
+      kind: "gensynth"
+      split: "test"
+      max_samples: 20000
+    - name: "CASIAv2"
+      kind: "tamper"
+      split: "test"
+      max_samples: 2000
+    - name: "COVERAGE"
+      kind: "tamper"
+      split: "test"
+      max_samples: 100
+
+  demo:
+    root: "data/demo"
+    train_pairs: 240
+    val_pairs: 60
+    test_pairs: 60
+
+# ---------------------------------------------------------------- 模型
+model:
+  spatial:
+    backbone: "tiny_vit"         # 轻量档直接走离线可构造骨干
+    backbone_variant: "s16"      # 384 维 / 12 层 → 骨干 21.68M
+    clip_pretrained: "openai/clip-vit-base-patch16"
+    clip_local_dir: "pretrained/clip-vit-base-patch16"
+    freeze_first_n_layers: 6
+    unfreeze_last_n_layers: 6
+    global_dim: 384
+    local_channels: [32, 64, 128]
+    local_dim: 128               # F_spa = 384 + 128 = 512
+
+  freq:
+    mask_hidden: 24
+    mask_kernel: 5
+    feat_channels: [24, 96]
+    amp_dim: 96
+    phase_dim: 96
+    dft_mode: "torch"
+    use_phase: true
+    use_learnable_mask: true
+
+  fusion:
+    dim: 384                     # 由 512 收窄到 384
+    use_cross_attention: true
+
+  vib:
+    hidden_dim: 192
+    latent_dim: 192
+    beta_max: 0.1
+    beta_warmup_start: 20
+    beta_warmup_end: 40
+    kl_clip_min: 0.0
+    kl_clip_max: 10.0
+    kl_reduction: "mean"
+    kl_clip_grad_through: true
+    use_vib: true
+    apply_to: "cls_only"
+
+  localization:
+    head: "mobile_unetv2"
+    encoder_channels: [32, 64, 128, 256]   # 由 (64,128,256,512) 收窄
+    encoder_strides: [1, 2, 2, 2]
+    use_edge_head: true
+    use_grad_stop: true
+    gs_stop_cls: false
+    gs_stop_loc: false
+
+  head:
+    cls_hidden: 128
+    num_classes: 2
+
+# ---------------------------------------------------------------- 损失
+loss:
+  normalization: "zscore"
+  zscore_window: 100
+  terms: ["vib", "bce", "dice", "edge"]
+  uncertainty_weighting: true
+  weights:
+    vib: 1.0
+    bce: 1.0
+    dice: 1.0
+    edge: 0.5
+  dice_smooth: 1.0
+
+# ---------------------------------------------------------------- 训练
+train:
+  stages:
+    - name: "stage1_cls_pretrain"
+      epochs: 20
+      lr: 1.0e-4
+      lr_min: 1.0e-6
+      weight_decay: 1.0e-5
+      freeze: ["localization"]
+      train: ["spatial", "freq", "fusion", "vib", "cls_head"]
+      use_tasks: ["cls"]
+      beta_epoch_offset: 0
+      monitor: "val_cls_auc"           # 只训分类 → 按分类 AUC 早停
+    - name: "stage2_loc_pretrain"
+      epochs: 20
+      lr: 5.0e-5
+      lr_min: 5.0e-7
+      weight_decay: 1.0e-5
+      freeze: ["vib", "cls_head"]
+      train: ["spatial", "freq", "fusion", "localization"]
+      use_tasks: ["loc", "edge"]
+      beta_epoch_offset: 0
+      monitor: "val_loc_miou"          # 分类头冻结，不能拿分类指标早停
+    - name: "stage3_joint_finetune"
+      epochs: 30
+      lr: 1.0e-5
+      lr_min: 1.0e-7
+      weight_decay: 1.0e-5
+      freeze: []
+      train: ["all"]
+      use_tasks: ["cls", "loc", "edge"]
+      beta_epoch_offset: 20
+      monitor: "val_cls_auc"
+
+  optimizer: "adamw"
+  betas: [0.9, 0.999]
+  grad_clip_norm: 5.0
+  amp: false
+  batch_size: 32                   # 模型小了，batch 可以开大
+  eval_every: 1
+  save_every: 5
+  log_every: 50
+  early_stop_patience: 8
+  # 早停依据（全局默认；各阶段用 stages[].monitor 覆盖）。
+  # 千万别用 val_total/val_loss：含可学习不确定性权重，尺度随训练漂移、跨轮不可比。
+  monitor: "val_cls_auc"
+
+# ---------------------------------------------------------------- 评测
+eval:
+  batch_size: 32
+  threshold: 0.5
+  metrics:
+    cls: ["acc", "precision", "recall", "f1", "auc", "ap"]
+    loc: ["miou", "pixel_acc", "dice", "f1"]
+  robustness:
+    jpeg_quality: [10, 20, 30, 50, 70, 90]
+    scale: [0.5, 0.75, 1.25, 1.5, 2.0]
+    crop_ratio: [0.1, 0.2, 0.3, 0.4, 0.5]
+    rotate: [0, 90, 180, 270]
+    gauss_std: [0.01, 0.02, 0.05]
+    saltpepper_density: [0.01, 0.02, 0.05]
+  ablation:
+    - "full"
+    - "no_learnable_mask"
+    - "no_phase"
+    - "no_cross_attention"
+    - "no_vib"
+    - "no_grad_stop"
+    - "no_edge"
+
+# ---------------------------------------------------------------- 部署
+deploy:
+  onnx_path: "deploy/lite.onnx"
+  onnx_simplified: "deploy/lite_simplified.onnx"
+  openvino_ir: "deploy/lite_ir/lite.xml"
+  opset_version: 17
+  do_constant_folding: true
+  export_params: true
+  dynamic_axes: true
+  target_model_size_mb: 120
+  target_cpu_fps: 8

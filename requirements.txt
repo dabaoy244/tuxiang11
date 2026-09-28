@@ -1,0 +1,39 @@
+# ============================================================================
+# 空频双分支轻量 VIB-Net —— 环境依赖
+# 建议 Python 3.10 ~ 3.12（部署端 OpenVINO 2024.1 官方 wheel 支持到 3.12）
+# ============================================================================
+
+# ---- 深度学习基础（GPU 版请按 https://pytorch.org 的官方命令重装）
+# CUDA 12.1 示例：pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+torch>=2.1
+torchvision>=0.16
+
+# ---- 图像处理与科学计算
+numpy>=1.24
+opencv-python-headless>=4.8      # 服务器/无 GUI 环境用 headless；桌面工具用 opencv-python
+pillow>=10.0
+scipy>=1.10                      # 仅在部分数据处理脚本中使用
+scikit-learn>=1.3                # 可选，用于额外的统计分析/ROC 曲线绘图
+
+# ---- CLIP 预训练骨干
+# 上界 <5：代码用的是 4.x 验证过的 CLIPVisionModel 加载路径，
+# 大版本升级不保证 API 与权重键名不变（见 docs/08 D38）。
+transformers>=4.35,<5            # CLIPVisionModel
+# open_clip_torch>=2.24          # 备选：也可用 open_clip 加载 CLIP 权重
+
+# ---- 配置与进度
+pyyaml>=6.0
+tqdm>=4.66
+
+# ---- 模型导出与部署
+onnx>=1.14
+onnxruntime>=1.16                # CPU 推理；GPU 用 onnxruntime-gpu
+onnx-simplifier>=0.4.35          # 对应申报书 3.1 的 ONNX Simplifier
+openvino>=2024.1                 # ⚠ Python 3.13 需 openvino>=2025.0
+
+# ---- 桌面工具
+PyQt5>=5.15
+reportlab>=4.0                   # PDF 报告的可选回退方案（首选 Qt 自带 PDF 引擎）
+
+# ---- 打包发布（可选）
+# pyinstaller>=6.0

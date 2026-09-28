@@ -1,0 +1,55 @@
+# ---- 数据集（本地 10 万+ 文件、下载归档 ~90GB，绝不入库）----
+data/
+!data/README.md
+
+# ---- 模型权重（单文件 345MB × 26 个）----
+checkpoints/
+pretrained/
+*.pt
+*.pth
+*.ckpt
+
+# ---- 部署产物（ONNX / IR / exe）----
+deploy/
+*.onnx
+*.bin
+*.xml
+*.exe
+
+# ---- 训练与评测的中间产物 ----
+outputs/run_*/
+outputs/_archive/
+outputs/_piptest/
+outputs/class_verify/
+outputs/cross_gen_scores/
+outputs/*.npz
+outputs/**/*.tar.gz
+outputs/ui_shot_results.pkl
+
+# ---- 结果包本体（362MB × 2 权重 + 531MB tar，不入库）----
+# 注意：只排除 _pack/ 目录本身，不要排除 results_20260928/，
+# 否则 git 不会进入该目录，里面的 PNG/SVG/MD 就无法被 add。
+outputs/upload/results_20260928/_pack/
+
+# ---- Python / 工具链 ----
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- WorkBuddy 本地工作区状态 ----
+.workbuddy/

@@ -1,0 +1,54 @@
+{
+  "split": "test",
+  "ckpt": "D:\\picture\\vibnet-forgery-detector\\checkpoints\\smoke_best.pt",
+  "device": "cpu",
+  "cls": {
+    "acc": 0.6666666666666666,
+    "precision": 0.6666666666666666,
+    "recall": 1.0,
+    "f1": 0.8,
+    "auc": 0.6,
+    "ap": 0.8310857240409306,
+    "mAP": 0.8310857240409306,
+    "tn": 0,
+    "fp": 15,
+    "fn": 0,
+    "tp": 30,
+    "n": 45
+  },
+  "loc": {
+    "miou": 0.49711797309944256,
+    "miou_per_sample": 0.2598774893021725,
+    "miou_tampered_only": 0.2685400722789116,
+    "n_tampered": 30,
+    "pixel_acc": 0.8188974808673469,
+    "dice": 0.6640999333810318,
+    "f1": 0.6640999333810318,
+    "n_pixels": 2257920
+  },
+  "n_loc_samples": 45,
+  "loc_absent_reason": null,
+  "perf": {
+    "latency_ms_per_image": 316.00398293255694,
+    "fps": 3.164517075765544,
+    "model_params_M": 90.530772,
+    "model_fp32_MB": 362.123088
+  },
+  "targets": {
+    "ForenSynths 检测准确率 >= 91%": null,
+    "CASIAv2 篡改定位 mIoU >= 56%": null,
+    "CPU 推理 >= 8 张/秒(224x224)": false,
+    "模型体积 <= 120MB": false
+  },
+  "miou_conventions": {
+    "miou": 0.49711797309944256,
+    "miou_tampered_only": 0.2685400722789116,
+    "miou_per_sample": 0.2598774893021725,
+    "n_tampered": 30,
+    "判定所用口径": "miou_tampered_only（含篡改区域的图逐图平均，文献标准）",
+    "说明": "另外两个口径仅作参考；**不要挑最高的那个报**。"
+  },
+  "is_synthetic_demo": true,
+  "demo_caveat": "本次评测使用程序化合成数据，精度指标不可与申报书真实数据集指标对标；仅用于验证评测流程与指标计算是否正确。",
+  "miou_caveat": "三种 mIoU 口径差异较大（池化 0.497 / 仅篡改图 0.269 / 全部非空图 0.260）。原因是池化口径**按像素加权**（大篡改区域主导），不是『真实图全零掩码按 IoU=1 计入』——后者是错的，全零图是被跳过的。论文请报 miou_tampered_only 并注明口径；不要挑最高的那个报。"
+}

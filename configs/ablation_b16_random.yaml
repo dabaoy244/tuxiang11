@@ -1,0 +1,228 @@
+# ============================================================================
+# 对照实验配置：随机初始化（random）
+# ----------------------------------------------------------------------------
+# ⚠ 本文件由 scripts/make_ablation_configs.py 自动生成，请勿手改 ——
+#   手改会让两臂失去可比性，直接改生成脚本再重跑。
+#
+# 实验协议（两臂完全一致，只有「骨干是否加载预训练权重」不同）：
+#   训练集 : ForenSynths/val  1600 张（ProGAN 20 类保留集）
+#   验证集 : ForenSynths/test 1300 张
+#            ⚠ 此处原写「与训练集图像无交集」，**该说法是错的**（2026-09-19 实测，
+#              见 scripts/audit_train_eval_overlap.py）：pool 级有 400 张真图
+#              与训练集 val **内容逐字节相同**（cat 200/200、horse 200/200），
+#              占 val 真图的 10%；当前 1300 张子采样恰好命中 3 张
+#              （0.23%），对指标影响可忽略，但**换子采样规模就会放大**。
+#              结论口径：只能说"本次子采样实测重叠 3 张"，不能说"无交集"。
+#   骨干   : ViT-B/16（768 维 / 12 层 / 12 头）
+#   轮数   : 3   batch=8   随机种子=3407
+#   阶段   : 仅 stage1_cls_pretrain（分类分支预训练）
+#
+# 骨干权重 : **不加载**（骨干随机初始化，复现失败现象）
+#
+# 已知口径限制（写论文/中期材料时必须带上）：
+#   * 训练集是 ProGAN 的**验证划分**，非官方 train 划分 —— 官方 train
+#     (progan_train.7z, 70GB) 在受限网络下未能取得。二者同为 ProGAN 生成、
+#     与测试集无图像重叠，可作为小规模替代，但**不能声称复现了官方协议**。
+#   * 评测在 ForenSynths/test 上做，但为控制 CPU 成本做了子采样，
+#     逐生成器结论请用 scripts/eval_cross_generator.py 分层评测。
+# ============================================================================
+project:
+  name: VIB-Net 对照实验 (random)
+  version: '1.0'
+  seed: 3407
+  output_dir: outputs/ablation_random
+  ckpt_dir: checkpoints
+data:
+  root: data/Datasets
+  image_size: 224
+  num_workers: 0
+  pin_memory: true
+  train_sets:
+  - name: ForenSynths
+    kind: gensynth
+    split: val
+    max_samples: 1600
+  test_sets:
+  - name: ForenSynths
+    kind: gensynth
+    split: test
+    max_samples: 1300
+  demo:
+    root: data/demo
+    train_pairs: 240
+    val_pairs: 60
+    test_pairs: 60
+  val_sets:
+  - name: ForenSynths
+    kind: gensynth
+    split: test
+    max_samples: 1300
+model:
+  spatial:
+    backbone: tiny_vit
+    backbone_variant: b16
+    freeze_first_n_layers: 6
+    unfreeze_last_n_layers: 6
+    global_dim: 768
+    local_channels:
+    - 32
+    - 64
+    - 128
+    local_dim: 128
+  freq:
+    mask_hidden: 32
+    mask_kernel: 5
+    feat_channels:
+    - 32
+    - 128
+    amp_dim: 128
+    phase_dim: 128
+    dft_mode: torch
+    use_phase: true
+    use_learnable_mask: true
+  fusion:
+    dim: 512
+    use_cross_attention: true
+  vib:
+    hidden_dim: 256
+    latent_dim: 256
+    beta_max: 0.1
+    beta_warmup_start: 20
+    beta_warmup_end: 40
+    kl_clip_min: 0.0
+    kl_clip_max: 10.0
+    kl_reduction: mean
+    kl_clip_grad_through: true
+    use_vib: true
+    apply_to: cls_only
+  localization:
+    head: mobile_unetv2
+    encoder_channels:
+    - 64
+    - 128
+    - 256
+    - 512
+    encoder_strides:
+    - 1
+    - 2
+    - 2
+    - 2
+    use_edge_head: true
+    use_grad_stop: true
+    gs_stop_cls: false
+    gs_stop_loc: false
+  head:
+    cls_hidden: 128
+    num_classes: 2
+loss:
+  normalization: zscore
+  zscore_window: 100
+  terms:
+  - vib
+  - bce
+  - dice
+  - edge
+  uncertainty_weighting: true
+  weights:
+    vib: 1.0
+    bce: 1.0
+    dice: 1.0
+    edge: 0.5
+  dice_smooth: 1.0
+train:
+  stages:
+  - name: stage1_cls_pretrain
+    epochs: 3
+    lr: 0.0001
+    lr_min: 1.0e-06
+    weight_decay: 1.0e-05
+    freeze:
+    - localization
+    train:
+    - spatial
+    - freq
+    - fusion
+    - vib
+    - cls_head
+    use_tasks:
+    - cls
+    beta_epoch_offset: 0
+  optimizer: adamw
+  betas:
+  - 0.9
+  - 0.999
+  grad_clip_norm: 5.0
+  amp: false
+  batch_size: 8
+  eval_every: 1
+  save_every: 1
+  log_every: 10
+  early_stop_patience: 99
+  monitor: val_cls_acc
+eval:
+  batch_size: 32
+  threshold: 0.5
+  metrics:
+    cls:
+    - acc
+    - precision
+    - recall
+    - f1
+    - auc
+    - ap
+    loc:
+    - miou
+    - pixel_acc
+    - dice
+    - f1
+  robustness:
+    jpeg_quality:
+    - 10
+    - 20
+    - 30
+    - 50
+    - 70
+    - 90
+    scale:
+    - 0.5
+    - 0.75
+    - 1.25
+    - 1.5
+    - 2.0
+    crop_ratio:
+    - 0.1
+    - 0.2
+    - 0.3
+    - 0.4
+    - 0.5
+    rotate:
+    - 0
+    - 90
+    - 180
+    - 270
+    gauss_std:
+    - 0.01
+    - 0.02
+    - 0.05
+    saltpepper_density:
+    - 0.01
+    - 0.02
+    - 0.05
+  ablation:
+  - full
+  - no_learnable_mask
+  - no_phase
+  - no_cross_attention
+  - no_vib
+  - no_grad_stop
+  - no_edge
+deploy:
+  onnx_path: deploy/vibnet.onnx
+  onnx_simplified: deploy/vibnet_simplified.onnx
+  openvino_ir: deploy/vibnet_ir/vibnet.xml
+  opset_version: 17
+  do_constant_folding: true
+  export_params: true
+  dynamic_axes: true
+  target_model_size_mb: 120
+  target_cpu_fps: 8

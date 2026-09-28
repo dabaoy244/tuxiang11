@@ -1,0 +1,56 @@
+{
+  "meta": {
+    "config": "configs/ablation_b16_random.yaml",
+    "ckpt": "checkpoints/abr_best.pt",
+    "ckpt_name": "abr_best.pt",
+    "per_class": 5000,
+    "seed": 3407,
+    "dedup_real": false,
+    "n_total": 2832,
+    "seconds": 895.7252831459045,
+    "batch_size": 16
+  },
+  "per_generator": {
+    "sdv14raw": {
+      "n": 2832,
+      "tp": 1416,
+      "tn": 0,
+      "fp": 1416,
+      "fn": 0,
+      "acc": 0.5,
+      "real_acc": 0.0,
+      "fake_acc": 1.0,
+      "prec": 0.5,
+      "rec": 1.0,
+      "auc": 0.42309591353059467,
+      "ap": 0.43905424448878916,
+      "auc_trapz": 0.4230969110089693,
+      "n_real": 1416,
+      "n_fake": 1416,
+      "avail_real": 1416,
+      "avail_fake": 1416
+    }
+  },
+  "overall": {
+    "n": 2832,
+    "tp": 1416,
+    "tn": 0,
+    "fp": 1416,
+    "fn": 0,
+    "acc": 0.5,
+    "real_acc": 0.0,
+    "fake_acc": 1.0,
+    "prec": 0.5,
+    "rec": 1.0,
+    "auc": 0.42309591353059467,
+    "ap": 0.43905424448878916,
+    "auc_trapz": 0.4230969110089693,
+    "n_real": 1416,
+    "n_fake": 1416,
+    "acc_macro": 0.5,
+    "real_acc_macro": 0.0,
+    "fake_acc_macro": 1.0,
+    "auc_macro": 0.42309591353059467,
+    "ap_macro": 0.43905424448878916
+  }
+}

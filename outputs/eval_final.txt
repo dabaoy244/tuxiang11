@@ -1,0 +1,32 @@
+<frozen runpy>:130: RuntimeWarning: 'src.evaluation.evaluate' found in sys.modules after import of package 'src.evaluation', but prior to execution of 'src.evaluation.evaluate'; this may result in unpredictable behaviour
+[ckpt] 检测到 checkpoint 的骨干档位为 'legacy_vit768_6'，与配置里的 'b16' 不一致，已自动对齐。（如需保持一致，请把 YAML 里的 backbone_variant 改为 'legacy_vit768_6'）
+[ckpt] ⚠ 该档位是「引入档位概念之前」的旧兜底骨干（768/6层/mlp2.0），仅用于复现旧结果。它不对应任何真实 ViT 规模、也没有预训练权重，其精度指标**不能写进论文**。正式实验请用 b16/s16 档重新训练。
+[eval] 已加载 checkpoints/demo_best.pt
+<frozen runpy>:130: RuntimeWarning: 'src.evaluation.evaluate' found in sys.modules after import of package 'src.evaluation', but prior to execution of 'src.evaluation.evaluate'; this may result in unpredictable behaviour
+<frozen runpy>:130: RuntimeWarning: 'src.evaluation.evaluate' found in sys.modules after import of package 'src.evaluation', but prior to execution of 'src.evaluation.evaluate'; this may result in unpredictable behaviour
+<frozen runpy>:130: RuntimeWarning: 'src.evaluation.evaluate' found in sys.modules after import of package 'src.evaluation', but prior to execution of 'src.evaluation.evaluate'; this may result in unpredictable behaviour
+<frozen runpy>:130: RuntimeWarning: 'src.evaluation.evaluate' found in sys.modules after import of package 'src.evaluation', but prior to execution of 'src.evaluation.evaluate'; this may result in unpredictable behaviour
+[eval] 结果已写入 outputs/demo_eval\eval_test.json
+==============================================================
+评测报告  split=test  device=cpu
+==============================================================
+【真伪检测指标】
+  ACC=0.6667   Precision=0.6667   Recall=1.0000
+  F1=0.8000   AUC=0.6933   AP(mAP)=0.8653
+  TP=30 FP=15 FN=0 TN=0
+【篡改定位指标】
+  mIoU=0.8232   mIoU(逐图均值)=0.3359
+  Pixel Acc=0.9287   Dice=0.9030   F1=0.9030
+  评测样本数=45
+【推理性能】
+  单张延迟=937.38 ms   吞吐=1.07 张/秒
+  参数量=33.84 M   FP32 体积≈135.4 MB
+  ⚠ 本次为合成演示数据，吞吐是 PyTorch eager 口径，验收请用 scripts/benchmark_cpu.py（ONNX 路径）
+  ⚠ 池化 mIoU(0.823) 与逐图均值 (0.336) 差距较大，通常由真实图像的全零掩码按 IoU=1 计入导致；论文请报逐图均值。
+【申报书预期指标核对】
+  [无数据] ForenSynths 检测准确率 >= 91%
+  [无数据] CASIAv2 篡改定位 mIoU >= 56%
+  [未达标] CPU 推理 >= 8 张/秒(224x224)
+  [未达标] 模型体积 <= 120MB
+  ⚠ 演示数据集下的精度项不作为验收依据（无像素级真实标注语义）
+==============================================================

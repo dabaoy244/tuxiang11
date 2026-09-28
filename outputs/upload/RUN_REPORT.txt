@@ -1,0 +1,167 @@
+训练运行报告  (由 run_all_pipeline.sh 生成)
+  生成时间      : 2026-09-28 20:49:18
+  train 退出码  : 0   用时 430分22秒
+  eval A(混合)  : rc=0  -> outputs/eval_full/eval_test.json
+  eval B(定位)  : rc=0  -> outputs/eval_casia/eval_test.json
+  训练日志      : outputs/gpu_train_log.txt
+  评测日志      : outputs/gpu_eval_log.txt
+  代码版本      : vibnet-forgery-detector · 代码包版本标识 ========================================================== 构建时间：2026-09-27 23:05 (UTC+8) 
+
+------ 训练日志末尾 40 行 ------
+[2026-09-28 20:42:11]     iter 1400/2875  loss=-1.8797  230.5s
+[2026-09-28 20:42:19]     iter 1450/2875  loss=-1.8942  238.7s
+[2026-09-28 20:42:28]     iter 1500/2875  loss=-1.8725  246.8s
+[2026-09-28 20:42:36]     iter 1550/2875  loss=-1.8711  255.2s
+[2026-09-28 20:42:44]     iter 1600/2875  loss=-1.8998  263.5s
+[2026-09-28 20:42:52]     iter 1650/2875  loss=-1.8829  271.6s
+[2026-09-28 20:43:00]     iter 1700/2875  loss=-1.8836  279.7s
+[2026-09-28 20:43:09]     iter 1750/2875  loss=-1.8732  288.0s
+[2026-09-28 20:43:17]     iter 1800/2875  loss=-1.8907  296.3s
+[2026-09-28 20:43:25]     iter 1850/2875  loss=-1.8708  304.3s
+[2026-09-28 20:43:33]     iter 1900/2875  loss=-1.8719  312.6s
+[2026-09-28 20:43:42]     iter 1950/2875  loss=-1.8716  320.8s
+[2026-09-28 20:43:50]     iter 2000/2875  loss=-1.8750  329.0s
+[2026-09-28 20:43:58]     iter 2050/2875  loss=-1.8670  337.3s
+[2026-09-28 20:44:06]     iter 2100/2875  loss=-1.8566  345.5s
+[2026-09-28 20:44:15]     iter 2150/2875  loss=-1.8741  353.7s
+[2026-09-28 20:44:23]     iter 2200/2875  loss=-1.8585  362.1s
+[2026-09-28 20:44:31]     iter 2250/2875  loss=-1.8784  370.4s
+[2026-09-28 20:44:39]     iter 2300/2875  loss=-1.8906  378.6s
+[2026-09-28 20:44:47]     iter 2350/2875  loss=-1.8964  386.6s
+[2026-09-28 20:44:56]     iter 2400/2875  loss=-1.9039  394.9s
+[2026-09-28 20:45:04]     iter 2450/2875  loss=-1.8879  403.2s
+[2026-09-28 20:45:12]     iter 2500/2875  loss=-1.8933  411.3s
+[2026-09-28 20:45:20]     iter 2550/2875  loss=-1.8846  419.6s
+[2026-09-28 20:45:29]     iter 2600/2875  loss=-1.8774  427.9s
+[2026-09-28 20:45:37]     iter 2650/2875  loss=-1.8804  436.2s
+[2026-09-28 20:45:45]     iter 2700/2875  loss=-1.8848  444.5s
+[2026-09-28 20:45:54]     iter 2750/2875  loss=-1.8832  452.8s
+[2026-09-28 20:46:02]     iter 2800/2875  loss=-1.8864  460.9s
+[2026-09-28 20:46:10]     iter 2850/2875  loss=-1.8943  469.3s
+[2026-09-28 20:46:14] [stage3_joint_finetune] epoch 15/30 (global 54) lr=5.05e-06 beta=0.100 loss=-1.8935 raw={'vib': 0.0216, 'bce': 0.0357, 'dice': 0.1777, 'edge': 0.0175} (473.4s)
+[2026-09-28 20:46:55]     val: loss=0.3499  cls_acc=0.9876  cls_precision=0.9854  cls_recall=0.9891  cls_f1=0.9873  cls_auc=0.9981  cls_ap=0.9950  cls_mAP=0.9950  cls_tn=4683.0000  cls_fp=66.0000  cls_fn=49.0000  cls_tp=4463.0000  cls_n=9261.0000  val_loss=0.3499  loc_miou=0.4352  loc_miou_per_sample=0.2487  loc_miou_tampered_only=0.2691  loc_n_tampered=512.0000  loc_pixel_acc=0.9700  loc_dice=0.6064  loc_f1=0.6064  loc_n_pixels=63271936.0000
+[2026-09-28 20:46:55]     早停：val_cls_auc 连续 8 轮未提升 → 结束本阶段「stage3_joint_finetune」
+[2026-09-28 20:46:56]     本阶段提前结束，继续下一阶段；最终 best.pt 由最后阶段的 val_cls_auc 选出。
+[2026-09-28 20:46:57] 训练历史已写入 /root/autodl-tmp/vibnet-forgery-detector/outputs/run_default/history.json
+
+[train] 完成。最佳 val_cls_auc=0.9991 @ epoch 46
+[train] 权重目录：/root/autodl-tmp/vibnet-forgery-detector/checkpoints
+[train] 日志：/root/autodl-tmp/vibnet-forgery-detector/outputs/run_default/train_log.txt
+[2026-09-28 20:46:59] train 退出码=0  用时 430分22秒
+
+------ 评测 A 报告 (eval_full) ------
+{
+  "split": "test",
+  "ckpt": "checkpoints/vibnet_best.pt",
+  "device": "cuda",
+  "cls": {
+    "acc": 0.7620749659032121,
+    "precision": 0.6904595613912557,
+    "recall": 0.9403595548368686,
+    "f1": 0.7962627360960091,
+    "auc": 0.9051006881845068,
+    "ap": 0.8975205793830398,
+    "mAP": 0.8975205793830398,
+    "tn": 6318,
+    "fp": 4432,
+    "fn": 627,
+    "tp": 9886,
+    "n": 21263
+  },
+  "loc": {
+    "miou": 0.4569605927235033,
+    "miou_per_sample": 0.2525241418271906,
+    "miou_tampered_only": 0.26679938571215844,
+    "n_tampered": 513,
+    "pixel_acc": 0.9747868973895971,
+    "dice": 0.6272792757823391,
+    "f1": 0.6272792757823391,
+    "n_pixels": 63372288
+  },
+  "n_loc_samples": 1263,
+  "loc_absent_reason": null,
+  "perf": {
+    "latency_ms_per_image": 0.45039372862069255,
+    "fps": 2220.2795830715677,
+    "model_params_M": 90.53154,
+    "model_fp32_MB": 362.12616
+  },
+  "targets": {
+    "ForenSynths 检测准确率 >= 91%": null,
+    "CASIAv2 篡改定位 mIoU >= 56%": false,
+    "CPU 推理 >= 8 张/秒(224x224)": true,
+    "模型体积 <= 120MB": false
+  },
+  "miou_conventions": {
+    "miou": 0.4569605927235033,
+    "miou_tampered_only": 0.26679938571215844,
+    "miou_per_sample": 0.2525241418271906,
+    "n_tampered": 513,
+    "判定所用口径": "miou_tampered_only（含篡改区域的图逐图平均，文献标准）",
+    "说明": "另外两个口径仅作参考；**不要挑最高的那个报**。"
+  },
+  "is_synthetic_demo": false,
+  "miou_caveat": "三种 mIoU 口径差异较大（池化 0.457 / 仅篡改图 0.267 / 全部非空图 0.253）。原因是池化口径**按像素加权**（大篡改区域主导），不是『真实图全零掩码按 IoU=1 计入』——后者是错的，全零图是被跳过的。论文请报 miou_tampered_only 并注明口径；不要挑最高的那个报。"
+}
+------ 评测 B 报告 (eval_casia) ------
+{
+  "split": "test",
+  "ckpt": "checkpoints/vibnet_best.pt",
+  "device": "cuda",
+  "cls": {
+    "acc": 0.9382422802850356,
+    "precision": 0.9035250463821892,
+    "recall": 0.949317738791423,
+    "f1": 0.9258555133079848,
+    "auc": 0.9846991552956466,
+    "ap": 0.9738220645330148,
+    "mAP": 0.9738220645330148,
+    "tn": 698,
+    "fp": 52,
+    "fn": 26,
+    "tp": 487,
+    "n": 1263
+  },
+  "loc": {
+    "miou": 0.4569605927235033,
+    "miou_per_sample": 0.2525241418271906,
+    "miou_tampered_only": 0.26679938571215844,
+    "n_tampered": 513,
+    "pixel_acc": 0.9747868973895971,
+    "dice": 0.6272792757823391,
+    "f1": 0.6272792757823391,
+    "n_pixels": 63372288
+  },
+  "n_loc_samples": 1263,
+  "loc_absent_reason": null,
+  "perf": {
+    "latency_ms_per_image": 1.1530621343505723,
+    "fps": 867.2559528313884,
+    "model_params_M": 90.53154,
+    "model_fp32_MB": 362.12616
+  },
+  "targets": {
+    "ForenSynths 检测准确率 >= 91%": null,
+    "CASIAv2 篡改定位 mIoU >= 56%": false,
+    "CPU 推理 >= 8 张/秒(224x224)": true,
+    "模型体积 <= 120MB": false
+  },
+  "miou_conventions": {
+    "miou": 0.4569605927235033,
+    "miou_tampered_only": 0.26679938571215844,
+    "miou_per_sample": 0.2525241418271906,
+    "n_tampered": 513,
+    "判定所用口径": "miou_tampered_only（含篡改区域的图逐图平均，文献标准）",
+    "说明": "另外两个口径仅作参考；**不要挑最高的那个报**。"
+  },
+  "is_synthetic_demo": false,
+  "miou_caveat": "三种 mIoU 口径差异较大（池化 0.457 / 仅篡改图 0.267 / 全部非空图 0.253）。原因是池化口径**按像素加权**（大篡改区域主导），不是『真实图全零掩码按 IoU=1 计入』——后者是错的，全零图是被跳过的。论文请报 miou_tampered_only 并注明口径；不要挑最高的那个报。"
+}
+------ pack ------ 
+-rw-r--r-- 1 root root 531M Sep 28 20:50 /root/autodl-tmp/vibnet_results_20260928_2049.tar.gz
+
+[1;32m[OK][0m 产物：/root/autodl-tmp/vibnet_results_20260928_2049.tar.gz
+拉回本地（在本地 Git Bash 执行，端口/主机看 AutoDL 控制台）：
+    scp -P <端口> root@<host>:/root/autodl-tmp/vibnet_results_20260928_2049.tar.gz ./
+或者丢到 /root/autodl-fs（同地区 20GB 内免费）做跨实例中转。
+已镜像权重包: /root/autodl-fs/vibnet_out/vibnet_results_20260928_2049.tar.gz

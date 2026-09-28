@@ -1,0 +1,142 @@
+==========================================================================
+ 跨生成器泛化评测
+==========================================================================
+
+找到 13 个生成器：
+  biggan             真   2000  假   2000
+  crn                真   6382  假   6382
+  cyclegan           真   1321  假   1321
+  deepfake           真   2707  假   2698
+  gaugan             真   5000  假   5000
+  imle               真   6382  假   6382
+  progan             真   4000  假   4000
+  san                真    219  假    219
+  seeingdark         真    180  假    180
+  stargan            真   1999  假   1999
+  stylegan           真   5991  假   5991
+  stylegan2          真   7988  假   7988
+  whichfaceisreal    真   1000  假   1000
+  合计                 真  45169  假  45160
+
+评测计划：2600 张（真 1300 / 假 1300）
+[eval] 载入权重 D:\picture\vibnet-forgery-detector\checkpoints\abp_best.pt（epoch=2, stage=stage1_cls_pretrain）
+[CLIPViTBackbone] ✅ 已加载预训练骨干权重点 D:\picture\vibnet-forgery-detector\pretrained/vit_b16_imagenet.pt （150 个张量）
+
+    推理 8/2600  2s 已用 / 预计还需 734s   libpng warning: iCCP: profile 'ICC Profile': 'GRAY': Gray color space not permitted on RGB PNG
+
+    推理 48/2600  13s 已用 / 预计还需 703s   libpng warning: iCCP: profile 'ICC Profile': 'desc': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'wtpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bkpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmnd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmdd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'vued': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'view': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'lumi': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'meas': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'tech': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bTRC': ICC profile tag start not a multiple of 4
+
+    推理 88/2600  24s 已用 / 预计还需 675s   
+    推理 128/2600  36s 已用 / 预计还需 687s   
+    推理 168/2600  47s 已用 / 预计还需 684s   
+    推理 208/2600  58s 已用 / 预计还需 672s   
+    推理 248/2600  71s 已用 / 预计还需 673s   
+    推理 288/2600  82s 已用 / 预计还需 660s   
+    推理 328/2600  93s 已用 / 预计还需 645s   
+    推理 368/2600  104s 已用 / 预计还需 632s   
+    推理 408/2600  115s 已用 / 预计还需 620s   
+    推理 448/2600  127s 已用 / 预计还需 609s   
+    推理 488/2600  139s 已用 / 预计还需 602s   
+    推理 528/2600  151s 已用 / 预计还需 593s   
+    推理 568/2600  163s 已用 / 预计还需 583s   
+    推理 608/2600  175s 已用 / 预计还需 572s   
+    推理 648/2600  185s 已用 / 预计还需 559s   
+    推理 688/2600  198s 已用 / 预计还需 549s   
+    推理 728/2600  210s 已用 / 预计还需 539s   
+    推理 768/2600  222s 已用 / 预计还需 530s   
+    推理 808/2600  234s 已用 / 预计还需 519s   
+    推理 848/2600  246s 已用 / 预计还需 509s   
+    推理 888/2600  260s 已用 / 预计还需 501s   
+    推理 928/2600  274s 已用 / 预计还需 494s   
+    推理 968/2600  302s 已用 / 预计还需 509s   
+    推理 1008/2600  396s 已用 / 预计还需 625s   
+    推理 1048/2600  479s 已用 / 预计还需 709s   
+    推理 1088/2600  560s 已用 / 预计还需 779s   
+    推理 1128/2600  647s 已用 / 预计还需 844s   
+    推理 1168/2600  739s 已用 / 预计还需 906s   
+    推理 1208/2600  793s 已用 / 预计还需 914s   
+    推理 1248/2600  840s 已用 / 预计还需 909s   
+    推理 1288/2600  890s 已用 / 预计还需 906s   
+    推理 1328/2600  900s 已用 / 预计还需 862s   
+    推理 1368/2600  959s 已用 / 预计还需 864s   
+    推理 1408/2600  1039s 已用 / 预计还需 879s   
+    推理 1448/2600  1120s 已用 / 预计还需 891s   
+    推理 1488/2600  1211s 已用 / 预计还需 905s   
+    推理 1528/2600  1291s 已用 / 预计还需 905s   
+    推理 1568/2600  1370s 已用 / 预计还需 902s   
+    推理 1608/2600  1453s 已用 / 预计还需 897s   
+    推理 1648/2600  1596s 已用 / 预计还需 922s   
+    推理 1688/2600  1719s 已用 / 预计还需 929s   
+    推理 1728/2600  1846s 已用 / 预计还需 931s   
+    推理 1768/2600  1999s 已用 / 预计还需 941s   
+    推理 1808/2600  2062s 已用 / 预计还需 903s   
+    推理 1848/2600  2072s 已用 / 预计还需 843s   
+    推理 1888/2600  2082s 已用 / 预计还需 785s   
+    推理 1928/2600  2093s 已用 / 预计还需 729s   
+    推理 1968/2600  2103s 已用 / 预计还需 675s   
+    推理 2008/2600  2114s 已用 / 预计还需 623s   
+    推理 2048/2600  2124s 已用 / 预计还需 573s   
+    推理 2088/2600  2135s 已用 / 预计还需 523s   
+    推理 2128/2600  2144s 已用 / 预计还需 476s   
+    推理 2168/2600  2153s 已用 / 预计还需 429s   
+    推理 2208/2600  2162s 已用 / 预计还需 384s   
+    推理 2248/2600  2173s 已用 / 预计还需 340s   
+    推理 2288/2600  2185s 已用 / 预计还需 298s   
+    推理 2328/2600  2197s 已用 / 预计还需 257s   
+    推理 2368/2600  2206s 已用 / 预计还需 216s   
+    推理 2408/2600  2215s 已用 / 预计还需 177s   
+    推理 2448/2600  2225s 已用 / 预计还需 138s   
+    推理 2488/2600  2235s 已用 / 预计还需 101s   
+    推理 2528/2600  2248s 已用 / 预计还需 64s   
+    推理 2568/2600  2258s 已用 / 预计还需 28s   
+逐样本分数已存盘：D:\picture\vibnet-forgery-detector\outputs\cross_gen_scores\pretrained.npz（改指标定义后可用 scripts/recompute_cross_gen.py 免推理重算）
+
+# 跨生成器泛化评测（abp_best.pt）
+
+- 配置：`D:\picture\vibnet-forgery-detector\configs\ablation_b16_pretrained.yaml`　权重：`D:\picture\vibnet-forgery-detector\checkpoints\abp_best.pt`
+- 采样：每生成器每类 ≤100 张；真图去重：是；随机种子 3407
+- 推理：2600 张，用时 2266 秒，batch=8
+
+| 生成器 | 真/假样本数 | ACC | 真图ACC | 假图ACC | AUC | AP |
+|---|---|---|---|---|---|---|
+| biggan | 100/100 | 0.5350 | 0.3300 | 0.7400 | 0.4973 | 0.4835 |
+| crn | 100/100 | 0.5100 | 0.0200 | 1.0000 | 0.7894 | 0.7490 |
+| cyclegan | 100/100 | 0.5500 | 0.5400 | 0.5600 | 0.5305 | 0.5411 |
+| deepfake | 100/100 | 0.5050 | 0.2500 | 0.7600 | 0.5052 | 0.5156 |
+| gaugan | 100/100 | 0.6300 | 0.3900 | 0.8700 | 0.7229 | 0.6948 |
+| imle | 100/100 | 0.5100 | 0.0200 | 1.0000 | 0.8210 | 0.8120 |
+| progan | 100/100 | 0.5500 | 0.4700 | 0.6300 | 0.5279 | 0.5035 |
+| san | 100/100 | 0.5350 | 0.5900 | 0.4800 | 0.5073 | 0.5284 |
+| seeingdark | 100/100 | 0.5150 | 0.0600 | 0.9700 | 0.5358 | 0.5316 |
+| stargan | 100/100 | 0.5250 | 0.1800 | 0.8700 | 0.5453 | 0.5542 |
+| stylegan | 100/100 | 0.5450 | 0.2900 | 0.8000 | 0.6202 | 0.6535 |
+| stylegan2 | 100/100 | 0.6600 | 0.3700 | 0.9500 | 0.8297 | 0.8340 |
+| whichfaceisreal | 100/100 | 0.4650 | 0.2300 | 0.7000 | 0.4665 | 0.4812 |
+| **宏平均** | — | **0.5412** | **0.2877** | **0.7946** | **0.6076** | **0.6063** |
+| **微平均（合并全部样本）** | 1300/1300 | **0.5412** | 0.2877 | 0.7946 | 0.5840 | 0.5894 |
+
+> 注：宏平均 = 先算各生成器的指标再取平均（每个生成器权重相同）；微平均 = 把所有样本合在一起算。
+> 两者差异大说明模型在不同生成器上表现严重不均。
+Traceback (most recent call last):
+  File "D:\picture\vibnet-forgery-detector\scripts\eval_cross_generator.py", line 375, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "D:\picture\vibnet-forgery-detector\scripts\eval_cross_generator.py", line 368, in main
+    json.dump({"meta": meta, "per_generator": per_gen, "overall": overall},
+                       ^^^^
+NameError: name 'meta' is not defined

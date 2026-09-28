@@ -1,0 +1,68 @@
+{
+  "rows": [
+    {
+      "variant": "norm",
+      "arm": "pretrained",
+      "n_real": 1416,
+      "n_fake": 1416,
+      "acc": 0.4834039548022599,
+      "real_acc": 0.4639830508474576,
+      "fake_acc": 0.5028248587570622,
+      "auc": 0.479006072648345,
+      "ap": 0.4766209518241503,
+      "tn": 657,
+      "tp": 712,
+      "ckpt": "abp_best.pt",
+      "scores": "outputs\\cross_gen_scores\\sdv14_norm_pretrained.npz"
+    },
+    {
+      "variant": "norm",
+      "arm": "random",
+      "n_real": 1416,
+      "n_fake": 1416,
+      "acc": 0.5,
+      "real_acc": 0.0,
+      "fake_acc": 1.0,
+      "auc": 0.42170742363305563,
+      "ap": 0.4382713596856468,
+      "tn": 0,
+      "tp": 1416,
+      "ckpt": "abr_best.pt",
+      "scores": "outputs\\cross_gen_scores\\sdv14_norm_random.npz"
+    },
+    {
+      "variant": "raw",
+      "arm": "pretrained",
+      "n_real": 1416,
+      "n_fake": 1416,
+      "acc": 0.4851694915254237,
+      "real_acc": 0.4788135593220339,
+      "fake_acc": 0.4915254237288136,
+      "auc": 0.48208279469501103,
+      "ap": 0.47842634835233355,
+      "tn": 678,
+      "tp": 696,
+      "ckpt": "abp_best.pt",
+      "scores": "outputs\\cross_gen_scores\\sdv14_raw_pretrained.npz"
+    },
+    {
+      "variant": "raw",
+      "arm": "random",
+      "n_real": 1416,
+      "n_fake": 1416,
+      "acc": 0.5,
+      "real_acc": 0.0,
+      "fake_acc": 1.0,
+      "auc": 0.42309591353059467,
+      "ap": 0.43905424448878916,
+      "tn": 0,
+      "tp": 1416,
+      "ckpt": "abr_best.pt",
+      "scores": "outputs\\cross_gen_scores\\sdv14_raw_random.npz"
+    }
+  ],
+  "variants": [
+    "norm",
+    "raw"
+  ]
+}

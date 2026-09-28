@@ -1,0 +1,17 @@
+[train] 设备：cuda
+[data] ⚠ split=train：配置了 3 个数据集但**一个样本都没有**，已跳过 —— ['ForenSynths(train)', 'CASIAv2(train)', 'COVERAGE(train)']
+[data]   这不会报错，但意味着这些数据**没有参与**这次训练/评测。请核对 data/Datasets/ 下的目录名与布局。
+Traceback (most recent call last):
+  File "D:\picture\vibnet-forgery-detector\scripts\train.py", line 143, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "D:\picture\vibnet-forgery-detector\scripts\train.py", line 104, in main
+    loaders = build_dataloaders(cfg, use_demo=args.demo)
+  File "D:\picture\vibnet-forgery-detector\src\data\datasets.py", line 477, in build_dataloaders
+    "train": make(train_sets, "train", True, bs, True),
+             ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\picture\vibnet-forgery-detector\src\data\datasets.py", line 447, in make
+    raise RuntimeError(
+    ...<3 lines>...
+    )
+RuntimeError: split=train 未找到任何样本（配置了 3 个数据集，全部为空）。请先运行 scripts/prepare_datasets.py，或使用 --demo 走离线演示数据集。已配置：[('ForenSynths', 'train', 'gensynth'), ('CASIAv2', 'train', 'tamper'), ('COVERAGE', 'train', 'tamper')]

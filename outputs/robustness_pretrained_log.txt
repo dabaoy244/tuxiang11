@@ -1,0 +1,49 @@
+<frozen runpy>:130: RuntimeWarning: 'src.evaluation.robustness' found in sys.modules after import of package 'src.evaluation', but prior to execution of 'src.evaluation.robustness'; this may result in unpredictable behaviour
+[CLIPViTBackbone] 加载 pretrained/clip-vit-base-patch16 (local_only=True) 失败：OSError
+[CLIPViTBackbone] 加载 openai/clip-vit-base-patch16 (local_only=True) 失败：OSError
+[CLIPViTBackbone] 未取得 CLIP 预训练权重。如需联网下载：先 export VIB_NET_ALLOW_DOWNLOAD=1；或把权重放到 clip_local_dir；或用 backbone: tiny_vit 跑通流程。
+[CLIPViTBackbone] 使用离线兜底骨干（结构等价于当前档位）。若配置了 model.spatial.backbone_weights 且加载成功，指标是有效的；否则骨干为随机初始化，指标无意义。
+[TamperDataset] CASIAv2/train: 载入 10090 条（篡改 4098 / 真实 5992，掩码 10090 个）
+[data] ⚠ split=train：配置了 2 个数据集但**一个样本都没有**，已跳过 —— ['ForenSynths(train)', 'COVERAGE(train)']
+[data]   这不会报错，但意味着这些数据**没有参与**这次训练/评测。请核对 data/Datasets/ 下的目录名与布局。
+[data] split=train 共 6000 条 ← CASIAv2(train) 6000 条
+[TamperDataset] CASIAv2/val: 载入 1261 条（篡改 512 / 真实 749，掩码 1261 个）
+[data] ⚠ split=val：配置了 1 个数据集但**一个样本都没有**，已跳过 —— ['COVERAGE(val)']
+[data]   这不会报错，但意味着这些数据**没有参与**这次训练/评测。请核对 data/Datasets/ 下的目录名与布局。
+[data] split=val   共 9261 条 ← ForenSynths(val) 8000 条、CASIAv2(val) 1261 条
+[TamperDataset] CASIAv2/test: 载入 1263 条（篡改 513 / 真实 750，掩码 1263 个）
+[data] ⚠ split=test：配置了 1 个数据集但**一个样本都没有**，已跳过 —— ['COVERAGE(test)']
+[data]   这不会报错，但意味着这些数据**没有参与**这次训练/评测。请核对 data/Datasets/ 下的目录名与布局。
+[data] split=test  共 21263 条 ← ForenSynths(test) 20000 条、CASIAv2(test) 1263 条
+<frozen runpy>:130: RuntimeWarning: 'src.evaluation.robustness' found in sys.modules after import of package 'src.evaluation', but prior to execution of 'src.evaluation.robustness'; this may result in unpredictable behaviour
+<frozen runpy>:130: RuntimeWarning: 'src.evaluation.robustness' found in sys.modules after import of package 'src.evaluation', but prior to execution of 'src.evaluation.robustness'; this may result in unpredictable behaviour
+<frozen runpy>:130: RuntimeWarning: 'src.evaluation.robustness' found in sys.modules after import of package 'src.evaluation', but prior to execution of 'src.evaluation.robustness'; this may result in unpredictable behaviour
+<frozen runpy>:130: RuntimeWarning: 'src.evaluation.robustness' found in sys.modules after import of package 'src.evaluation', but prior to execution of 'src.evaluation.robustness'; this may result in unpredictable behaviour
+[robust] 原图                 ACC=0.6250 F1=0.7000 mIoU=nan (ΔACC=+0.0000)
+[robust] JPEG q=10          ACC=0.6042 F1=0.6885 mIoU=nan (ΔACC=+0.0208)
+[robust] JPEG q=20          ACC=0.6042 F1=0.6885 mIoU=nan (ΔACC=+0.0208)
+[robust] JPEG q=30          ACC=0.6250 F1=0.7000 mIoU=nan (ΔACC=+0.0000)
+[robust] JPEG q=50          ACC=0.6250 F1=0.7000 mIoU=nan (ΔACC=+0.0000)
+[robust] JPEG q=70          ACC=0.6250 F1=0.7000 mIoU=nan (ΔACC=+0.0000)
+[robust] JPEG q=90          ACC=0.6250 F1=0.7000 mIoU=nan (ΔACC=+0.0000)
+[robust] 缩放 x0.5            ACC=0.5208 F1=0.6667 mIoU=nan (ΔACC=+0.1042)
+[robust] 缩放 x0.75           ACC=0.5208 F1=0.6567 mIoU=nan (ΔACC=+0.1042)
+[robust] 缩放 x1.25           ACC=0.5208 F1=0.6462 mIoU=nan (ΔACC=+0.1042)
+[robust] 缩放 x1.5            ACC=0.5417 F1=0.6563 mIoU=nan (ΔACC=+0.0833)
+[robust] 缩放 x2.0            ACC=0.5417 F1=0.6563 mIoU=nan (ΔACC=+0.0833)
+[robust] 裁剪 10%             ACC=0.5208 F1=0.6462 mIoU=nan (ΔACC=+0.1042)
+[robust] 裁剪 20%             ACC=0.5208 F1=0.6462 mIoU=nan (ΔACC=+0.1042)
+[robust] 裁剪 30%             ACC=0.5417 F1=0.6667 mIoU=nan (ΔACC=+0.0833)
+[robust] 裁剪 40%             ACC=0.5208 F1=0.6667 mIoU=nan (ΔACC=+0.1042)
+[robust] 裁剪 50%             ACC=0.5000 F1=0.6571 mIoU=nan (ΔACC=+0.1250)
+[robust] 旋转 0°              ACC=0.6250 F1=0.7000 mIoU=nan (ΔACC=+0.0000)
+[robust] 旋转 90°             ACC=0.6042 F1=0.6780 mIoU=nan (ΔACC=+0.0208)
+[robust] 旋转 180°            ACC=0.6042 F1=0.6780 mIoU=nan (ΔACC=+0.0208)
+[robust] 旋转 270°            ACC=0.6042 F1=0.6780 mIoU=nan (ΔACC=+0.0208)
+[robust] 高斯噪声 σ=0.01        ACC=0.6250 F1=0.7000 mIoU=nan (ΔACC=+0.0000)
+[robust] 高斯噪声 σ=0.02        ACC=0.6042 F1=0.6780 mIoU=nan (ΔACC=+0.0208)
+[robust] 高斯噪声 σ=0.05        ACC=0.6875 F1=0.6512 mIoU=nan (ΔACC=-0.0625)
+[robust] 椒盐噪声 d=0.01        ACC=0.6042 F1=0.5366 mIoU=nan (ΔACC=+0.0208)
+[robust] 椒盐噪声 d=0.02        ACC=0.5208 F1=0.0800 mIoU=nan (ΔACC=+0.1042)
+[robust] 椒盐噪声 d=0.05        ACC=0.5000 F1=0.0000 mIoU=nan (ΔACC=+0.1250)
+[robust] 结果已写入 outputs/robustness.json 和 robustness.md

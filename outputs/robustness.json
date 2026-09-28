@@ -1,0 +1,303 @@
+{
+  "n_samples": 48,
+  "threshold": 0.5,
+  "results": [
+    {
+      "op": "原图",
+      "acc": 0.625,
+      "f1": 0.7000000000000001,
+      "auc": 0.6909722222222222,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0,
+      "miou_drop": 0.0
+    },
+    {
+      "op": "JPEG q=10",
+      "acc": 0.6041666666666666,
+      "f1": 0.6885245901639344,
+      "auc": 0.7378472222222222,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0208,
+      "miou_drop": null
+    },
+    {
+      "op": "JPEG q=20",
+      "acc": 0.6041666666666666,
+      "f1": 0.6885245901639344,
+      "auc": 0.7152777777777778,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0208,
+      "miou_drop": null
+    },
+    {
+      "op": "JPEG q=30",
+      "acc": 0.625,
+      "f1": 0.7000000000000001,
+      "auc": 0.7152777777777778,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0,
+      "miou_drop": null
+    },
+    {
+      "op": "JPEG q=50",
+      "acc": 0.625,
+      "f1": 0.7000000000000001,
+      "auc": 0.6979166666666666,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0,
+      "miou_drop": null
+    },
+    {
+      "op": "JPEG q=70",
+      "acc": 0.625,
+      "f1": 0.7000000000000001,
+      "auc": 0.6944444444444444,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0,
+      "miou_drop": null
+    },
+    {
+      "op": "JPEG q=90",
+      "acc": 0.625,
+      "f1": 0.7000000000000001,
+      "auc": 0.6857638888888888,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0,
+      "miou_drop": null
+    },
+    {
+      "op": "缩放 x0.5",
+      "acc": 0.5208333333333334,
+      "f1": 0.6666666666666666,
+      "auc": 0.6579861111111112,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.1042,
+      "miou_drop": null
+    },
+    {
+      "op": "缩放 x0.75",
+      "acc": 0.5208333333333334,
+      "f1": 0.6567164179104478,
+      "auc": 0.7065972222222222,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.1042,
+      "miou_drop": null
+    },
+    {
+      "op": "缩放 x1.25",
+      "acc": 0.5208333333333334,
+      "f1": 0.6461538461538462,
+      "auc": 0.7118055555555556,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.1042,
+      "miou_drop": null
+    },
+    {
+      "op": "缩放 x1.5",
+      "acc": 0.5416666666666666,
+      "f1": 0.6562500000000001,
+      "auc": 0.7152777777777778,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0833,
+      "miou_drop": null
+    },
+    {
+      "op": "缩放 x2.0",
+      "acc": 0.5416666666666666,
+      "f1": 0.6562500000000001,
+      "auc": 0.7152777777777778,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0833,
+      "miou_drop": null
+    },
+    {
+      "op": "裁剪 10%",
+      "acc": 0.5208333333333334,
+      "f1": 0.6461538461538462,
+      "auc": 0.71875,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.1042,
+      "miou_drop": null
+    },
+    {
+      "op": "裁剪 20%",
+      "acc": 0.5208333333333334,
+      "f1": 0.6461538461538462,
+      "auc": 0.7482638888888888,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.1042,
+      "miou_drop": null
+    },
+    {
+      "op": "裁剪 30%",
+      "acc": 0.5416666666666666,
+      "f1": 0.6666666666666667,
+      "auc": 0.7517361111111112,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0833,
+      "miou_drop": null
+    },
+    {
+      "op": "裁剪 40%",
+      "acc": 0.5208333333333334,
+      "f1": 0.6666666666666666,
+      "auc": 0.7621527777777778,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.1042,
+      "miou_drop": null
+    },
+    {
+      "op": "裁剪 50%",
+      "acc": 0.5,
+      "f1": 0.6571428571428571,
+      "auc": 0.6684027777777778,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.125,
+      "miou_drop": null
+    },
+    {
+      "op": "旋转 0°",
+      "acc": 0.625,
+      "f1": 0.7000000000000001,
+      "auc": 0.6909722222222222,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0,
+      "miou_drop": null
+    },
+    {
+      "op": "旋转 90°",
+      "acc": 0.6041666666666666,
+      "f1": 0.6779661016949152,
+      "auc": 0.6336805555555556,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0208,
+      "miou_drop": null
+    },
+    {
+      "op": "旋转 180°",
+      "acc": 0.6041666666666666,
+      "f1": 0.6779661016949152,
+      "auc": 0.7083333333333334,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0208,
+      "miou_drop": null
+    },
+    {
+      "op": "旋转 270°",
+      "acc": 0.6041666666666666,
+      "f1": 0.6779661016949152,
+      "auc": 0.6631944444444444,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0208,
+      "miou_drop": null
+    },
+    {
+      "op": "高斯噪声 σ=0.01",
+      "acc": 0.625,
+      "f1": 0.7000000000000001,
+      "auc": 0.6875,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0,
+      "miou_drop": null
+    },
+    {
+      "op": "高斯噪声 σ=0.02",
+      "acc": 0.6041666666666666,
+      "f1": 0.6779661016949152,
+      "auc": 0.6892361111111112,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0208,
+      "miou_drop": null
+    },
+    {
+      "op": "高斯噪声 σ=0.05",
+      "acc": 0.6875,
+      "f1": 0.6511627906976745,
+      "auc": 0.6892361111111112,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": -0.0625,
+      "miou_drop": null
+    },
+    {
+      "op": "椒盐噪声 d=0.01",
+      "acc": 0.6041666666666666,
+      "f1": 0.5365853658536585,
+      "auc": 0.6909722222222222,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.0208,
+      "miou_drop": null
+    },
+    {
+      "op": "椒盐噪声 d=0.02",
+      "acc": 0.5208333333333334,
+      "f1": 0.07999999999999999,
+      "auc": 0.6979166666666666,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.1042,
+      "miou_drop": null
+    },
+    {
+      "op": "椒盐噪声 d=0.05",
+      "acc": 0.5,
+      "f1": 0.0,
+      "auc": 0.7065972222222222,
+      "miou": null,
+      "dice": null,
+      "n_loc": 0,
+      "acc_drop": 0.125,
+      "miou_drop": null
+    }
+  ]
+}
