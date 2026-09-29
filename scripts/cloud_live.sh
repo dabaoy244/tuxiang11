@@ -25,7 +25,20 @@ CLS=$'\033[2J\033[H'
 B=$'\033[1m'; C=$'\033[1;36m'; G=$'\033[1;32m'; Y=$'\033[1;33m'; R=$'\033[1;31m'; N=$'\033[0m'
 
 # 找出最近被写过的训练日志（不同 tag 的输出目录不一样，不能写死一个路径）
+#
+# ★ 2026-09-30 修正：优先用启动器写下的「当前训练日志」权威路径。
+#   原因：`ls -t` 只看 mtime，而 ablation 自己的 `outputs/ablation/<preset>/train_log.txt`
+#   是**跨轮次追加**的（重跑不清空），mtime 只比 nohup 重定向日志新一点点，
+#   经常被选中 —— 于是看板顶部那行 [关键] 会抓到**上一轮**的 epoch 行
+#   （实测：重跑后才 epoch 0，却显示昨天的 `epoch 12/16 global 11`），
+#   截图交出去就是把旧状态当成当前状态，属误导性取证。
 newest_log() {
+    local cur
+    cur="$(cat /root/autodl-tmp/.current_train_log 2>/dev/null)"
+    if [ -n "$cur" ] && [ -f "$cur" ] && [ -n "$(find "$cur" -mmin -60 2>/dev/null)" ]; then
+        printf '%s\n' "$cur"
+        return
+    fi
     find "$PROJ/outputs" -maxdepth 3 -type f \
         \( -name '*.log' -o -name '*train*.txt' -o -name 'gpu_train_log.txt' \) \
         -mmin -60 2>/dev/null | xargs -r ls -t 2>/dev/null | head -1
@@ -75,8 +88,11 @@ while true; do
         # ★ 关键进度行单独提出来置顶：else 会被下面的噪声挤出可见区。
         #   实测：数据加载器每张 PNG 都打一行 `libpng warning: iCCP ...`，
         #   屏幕只剩 12 行时，尾部全是警告，真正的 epoch/iter 进度一行都看不到。
-        PL="$(grep 'epoch ' "$L" 2>/dev/null | tail -1)"
-        [ -z "$PL" ] && PL="$(grep 'iter ' "$L" 2>/dev/null | tail -1)"
+        # ★ 2026-09-30 修正：`epoch` 行只在**每个 epoch 结束时**才写，重跑起跑到
+        #   第一个 epoch 结束之间（约 7 分钟）文件里最后一条 `epoch` 行仍是**上一轮**的。
+        #   故改为「epoch / iter 两个模式一起匹配、取文件里最后出现的那条」——
+        #   同一文件内按时间顺序追加，最后一条必定是当前进度。
+        PL="$(grep -E 'epoch |iter ' "$L" 2>/dev/null | tail -1)"
         [ -z "$PL" ] && PL="（还没产生进度行）"
         printf '  %s[关键]%s %s\n' "$G" "$N" "$(printf '%s' "$PL" | cut -c1-130)"
         # 行宽与行数都要压住：窗口只有 150x44，超出会折行把顶部横幅顶出屏幕。
