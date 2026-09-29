@@ -80,7 +80,13 @@ fi
 
 echo "=== 3) 启动链路（ARMS=$REM） ==="
 rm -f /root/autodl-tmp/chain.stop
-ARMS="$REM" setsid nohup /root/autodl-tmp/ablation_chain.sh > /dev/null 2>&1 < /dev/null &
+# ★ stderr 落到文件而不是 /dev/null（2026-09-30 05:30 教训）：
+#   `set -u` 撞到未定义变量时 bash 只在 stderr 打印一行就退出；
+#   原来 `> /dev/null 2>&1` 把它吞了 ⇒ 链路"无声消失"、chain.log 一行都没有，只能手工重放定位。
+printf '\n===== chain 启动 %s  ARMS=%s =====\n' "$(date '+%F %T')" "$REM" \
+  >> /root/autodl-tmp/chain.stderr.log
+ARMS="$REM" setsid nohup /root/autodl-tmp/ablation_chain.sh \
+  > /dev/null 2>> /root/autodl-tmp/chain.stderr.log < /dev/null &
 sleep 4
 echo "  链路进程数: $(pgrep -c -f ablation_chain.sh)"
 echo "  --- chain.log 尾部 ---"
