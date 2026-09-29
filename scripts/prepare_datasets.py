@@ -68,8 +68,22 @@ SOURCES = {
     },
     "COVERAGE": {
         "desc": "复制移动细粒度定位（100 真 + 100 篡改）",
-        "source": "https://github.com/wjctl/COVERAGE（掩码后缀随版本为 "
-                  "*_forged.tif 或 *_gt.png，落盘后先确认）",
+        # 2026-09-29 更正：原注释写的 github.com/wjctl/COVERAGE **已 404（死链）**，
+        # 照它去下载只会白试。以下是**实测可用**的官方渠道（作者 wenbihan 的
+        # ICIP2016 原始仓库，仓库内只有 README，图片在外链）：
+        #   https://github.com/wenbihan/coverage
+        #   · 百度网盘（国内推荐）：https://pan.baidu.com/s/11i_swrFveLc9uZr1eR006Q
+        #     提取码 zduj
+        #   · OneDrive（海外）：https://1drv.ms/f/s!AggVhXcCj1FLhUUyUrqSpV_yI_GH
+        # 两个官方源都**不支持命令行直取**（百度需登录、OneDrive 在国内不可达），
+        # 且 GitHub / HuggingFace 镜像 / ModelScope / Gitee 均无镜像 ⇒ 必须人工下载。
+        # 下载后交给 scripts/fetch_coverage.py 规范化（它会容错配对掩码并断言规模）：
+        #   python scripts/fetch_coverage.py --from-dir <解压目录> --dry-run
+        #   python scripts/fetch_coverage.py --from-dir <解压目录>
+        # 掩码后缀随打包版本为 *_gt.png 或 *_forged.tif，fetch_coverage.py 两种都认。
+        "source": "https://github.com/wenbihan/coverage"
+                  "（人工下载：百度网盘 提取码 zduj / OneDrive；"
+                  "用 scripts/fetch_coverage.py 规范化）",
         "layout": "{root}/COVERAGE/<split>/{image,mask}/",
     },
 }

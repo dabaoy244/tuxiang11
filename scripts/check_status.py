@@ -99,7 +99,11 @@ TASKS = {
                           ["outputs/fetch_train_log.txt",
                            "outputs/fetch_full_log.txt",
                            "outputs/fetch_val_test_log.txt"], _parse_fetch),
-    "fetch_tamper_datasets.py": ("篡改数据集下载(CASIA/COVERAGE)",
+    # 2026-09-29 更正标签：这个脚本**只做 CASIAv2**（走 ModelScope），
+    # 原标签写 "(CASIA/COVERAGE)" 会让人以为 COVERAGE 也有下载器 —— 实际没有，
+    # 且这里是本项目一个长期静默缺口（配置里声明了 COVERAGE 但磁盘上没有）。
+    # COVERAGE 的获取见 scripts/fetch_coverage.py（人工下载 + 脚本规范化）。
+    "fetch_tamper_datasets.py": ("篡改数据集下载(CASIAv2)",
                                  ["outputs/fetch_casia_log.txt"], _parse_fetch),
     # 对照实验两臂是 run_ablation.py 拉起的子进程 scripts/train.py，
     # 所以两个入口共用同一组日志候选（取最新那个，避免误报停滞）。
