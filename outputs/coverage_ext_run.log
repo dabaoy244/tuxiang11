@@ -1,0 +1,106 @@
+==========================================================================
+ 外部域零样本评测  domain=COVERAGE
+==========================================================================
+ 外部域目录：data\external\COVERAGE
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 46752.17it/s]
+[transformers] [1mCLIPVisionModel LOAD REPORT[0m from: pretrained/clip-vit-base-patch16
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+visual_projection.weight                                     | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+text_projection.weight                                       | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+[ WARN:0@0.509] global grfmt_tiff.cpp:123 cv::TIFF_Warning TIFFReadDirectory: Unknown field with tag 59932 (0xea1c) encountered
+[ WARN:0@12.237] global grfmt_tiff.cpp:123 cv::TIFF_Warning TIFFReadDirectory: Unknown field with tag 59932 (0xea1c) encountered
+[ WARN:0@12.343] global grfmt_tiff.cpp:123 cv::TIFF_Warning TIFFReadDirectory: Unknown field with tag 59932 (0xea1c) encountered
+[ WARN:0@23.143] global grfmt_tiff.cpp:123 cv::TIFF_Warning TIFFReadDirectory: Unknown field with tag 59932 (0xea1c) encountered
+[ WARN:0@35.301] global grfmt_tiff.cpp:123 cv::TIFF_Warning TIFFReadDirectory: Unknown field with tag 59932 (0xea1c) encountered
+[ WARN:0@35.310] global grfmt_tiff.cpp:123 cv::TIFF_Warning TIFFReadDirectory: Unknown field with tag 59932 (0xea1c) encountered
+[ WARN:0@35.336] global grfmt_tiff.cpp:123 cv::TIFF_Warning TIFFReadDirectory: Unknown field with tag 59932 (0xea1c) encountered
+[ WARN:0@57.557] global grfmt_tiff.cpp:123 cv::TIFF_Warning TIFFReadDirectory: Unknown field with tag 59932 (0xea1c) encountered
+[CLIPViTBackbone] 检测到 transformers>=5 的扁平布局，已补 `vision_model.` 包装以对齐 4.x 的键名（权重内容无差异）。
+[CLIPViTBackbone] 冻结前 6/12 层，可训练参数 42.53M / 85.80M
+[eval] 已加载 outputs/upload/results_20260928/_pack/vibnet_best.pt
+[TamperDataset] COVERAGE/test: 载入 191 条（篡改 91 / 真实 100，掩码 191 个）
+[data] split=train 共 191 条 ← COVERAGE(test) 191 条
+[TamperDataset] COVERAGE/test: 载入 191 条（篡改 91 / 真实 100，掩码 191 个）
+[data] split=val   共 191 条 ← COVERAGE(test) 191 条
+[TamperDataset] COVERAGE/test: 载入 191 条（篡改 91 / 真实 100，掩码 191 个）
+[data] split=test  共 191 条 ← COVERAGE(test) 191 条
+[eval] 结果已写入 outputs/coverage_ext\eval_test.json
+==============================================================
+评测报告  split=test  device=cpu
+==============================================================
+【真伪检测指标】
+  ACC=0.5026   Precision=0.4881   Recall=0.9011
+  F1=0.6332   AUC=0.5746   AP(mAP)=0.5403
+  TP=82 FP=86 FN=9 TN=14
+【篡改定位指标】（三种 mIoU 口径都列出，报哪个必须写明）
+  ① 池化 mIoU（像素加权，最宽松）        = 0.1333
+  ② 仅篡改图 mIoU（文献标准，★判定用）  = 0.1598   （n_tampered=91）
+  ③ 全部非空图 mIoU（含误报，最严格）    = 0.0836
+  Pixel Acc=0.8696   Dice=0.2353   F1=0.2353
+  评测样本数=191
+【推理性能】
+  单张延迟=357.66 ms   吞吐=2.80 张/秒
+  参数量=90.53 M   FP32 体积≈362.1 MB
+【申报书预期指标核对】
+  [无数据] ForenSynths 检测准确率 >= 91%
+  [未达标] CASIAv2 篡改定位 mIoU >= 56%
+  [未达标] CPU 推理 >= 8 张/秒(224x224)
+  [未达标] 模型体积 <= 120MB
+==============================================================
+
+# 外部域独立基准行：COVERAGE（零样本，未参与训练）
+
+- 权重：`outputs/upload/results_20260928/_pack/vibnet_best.pt`　设备：`cpu`
+- 样本：100 真实 + 91 篡改 = **191** 张（定位池 191 张，其中 GT 真有前景 91 张）
+- 口径来源：`configs/default_crossval.yaml` 的模型/评测段；仅 `data.root` 换成`data\external\COVERAGE`
+- ⚠ 复制-移动（copy-move）篡改，官方 100 对；与训练域（ForenSynths 生成图 / CASIAv2 拼接·复制移动）**不同源**，全程未参与训练 ⇒ 这是**零样本跨数据集**结果。
+
+| 指标 | 值 |
+|---|---|
+| 真伪 ACC | **0.5026** |
+| 真伪 AUC | **0.5746** |
+| AP | 0.5403 |
+| F1 | 0.6332 |
+| 真实图召回（真判真） | 0.1400 |
+| 篡改图召回（假判假） | 0.9011 |
+| 定位 mIoU（池化，宽松） | 0.1333 |
+| 定位 mIoU（仅篡改图，★文献标准） | **0.1598** |
+| 定位 mIoU（全部非空图，严格） | 0.0836 |
+| Dice | 0.2353 |
+| Pixel Acc | 0.8696 |
+
+> 复现命令：`python scripts\eval_external_domain.py --domain COVERAGE --ckpt outputs/upload/results_20260928/_pack/vibnet_best.pt --device cpu --expect 191 --out outputs/coverage_ext --tag pack0928`
+
+> ⚠️ **口径红旗**：定位池含 100 张全零 GT 的真实图（掩码文件存在但无前景）。只有 miou_tampered_only 跨数据集可比；其余三个含真实图像素，受误报影响，不可与 CASIAv2 的同名指标并列。
+> 报数请只报 `miou_tampered_only`（= 上表★行），并注明它是91 张篡改图上的逐图 IoU 平均。
+
+已写出：
+  outputs\coverage_ext\external_COVERAGE_pack0928.md
+  outputs\coverage_ext\external_COVERAGE_pack0928.json
+
+✅ 样本构成校验通过

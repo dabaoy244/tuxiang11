@@ -123,7 +123,8 @@ def evaluate_model(
                 f"前若干批全是排在前面的大数据集（如 ForenSynths）；"
                 f"② `--max-batches` 设得太小。"
                 f"→ 想测定位指标，请让 test_sets **只含**带掩码的数据集"
-                f"（见 configs/eval_casia.yaml）。"
+                f"（把 test_sets 收窄成单个 tamper 数据集即可；"
+                f"外部域 COVERAGE 用 scripts/eval_external_domain.py 单独评）。"
             )
         else:
             loc_absent = ("该 split 配置的数据集都不含像素级掩码"

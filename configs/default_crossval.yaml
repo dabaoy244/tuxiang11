@@ -47,12 +47,16 @@ data:
       kind: "tamper"          # 传统篡改（有像素掩码）
       split: "train"
       max_samples: 6000
-    - name: "COVERAGE"
-      kind: "tamper"
-      split: "train"
-      max_samples: 120
+    # ★ 2026-09-30：COVERAGE **不在这里**。
+    #   它被改为「**纯外部测试域**」（零样本、全程不参与训练），数据放
+    #   `data/external/COVERAGE/`（**刻意不在 data/Datasets/ 下**，避免被这里
+    #   按 root 扫到、混进各 split 毁掉消融协议可比性）。
+    #   评测入口：`scripts/eval_external_domain.py --domain COVERAGE`
+    #   —— 它运行时从本配置现读模型/评测段，只覆盖 data.root，所以不存在第二份配置漂移。
 
-  # 测试集：三个公开标准数据集，分别评估不同维度
+  # 测试集：**本协议内**的两个公开数据集（ForenSynths 真伪 + CASIAv2 定位）。
+  #   第三个公开数据集 COVERAGE 已于 2026-09-30 改为**独立外部测试域**（零样本），
+  #   不走这里；见下面 test_sets 里的说明与 scripts/eval_external_domain.py。
   #
   # ⚠️ ForenSynths 这里**剔除**了被留作 val_cross 的 3 个生成器。
   #    目的：验证集与测试集互不重叠，模型选择与最终报数用同一套"没见过的生成器"
@@ -68,10 +72,9 @@ data:
       kind: "tamper"
       split: "test"
       max_samples: 2000
-    - name: "COVERAGE"
-      kind: "tamper"
-      split: "test"
-      max_samples: 100
+    # ★ COVERAGE 刻意不在此处：它是**独立外部测试域**，走
+    #   `scripts/eval_external_domain.py --domain COVERAGE` 单独出「一行基准」，
+    #   而不是混进这里的微平均（否则排名靠前的大数据集 + 外部域会被算成一个数）。
 
   # 验证集：★ 本配置的核心改动 —— 用"留出生成器"替代与 train 同源的 ProGAN val
   #   · ForenSynths val_cross：biggan / cyclegan / stargan，每生成器真/假各 400
@@ -89,10 +92,7 @@ data:
       kind: "tamper"
       split: "val"
       max_samples: 1261
-    - name: "COVERAGE"
-      kind: "tamper"
-      split: "val"
-      max_samples: 100
+    # ★ COVERAGE 不在此处（见 train_sets 处的说明）。
 
   # 离线演示数据集（无网络/无 GPU 时可端到端跑通全流程）
   demo:

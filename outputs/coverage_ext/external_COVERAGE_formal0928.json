@@ -1,0 +1,38 @@
+{
+  "domain": "COVERAGE",
+  "ckpt": "checkpoints/vibnet_best.pt",
+  "device": "cpu",
+  "n_total": 191,
+  "n_real": 100,
+  "n_fake": 91,
+  "n_loc_samples": 191,
+  "n_loc_tampered": 91,
+  "cls": {
+    "acc": 0.5026178010471204,
+    "precision": 0.4880952380952381,
+    "recall": 0.9010989010989011,
+    "f1": 0.6332046332046332,
+    "auc": 0.5745604395604396,
+    "ap": 0.5402752282361925,
+    "mAP": 0.5402752282361925,
+    "tn": 14,
+    "fp": 86,
+    "fn": 9,
+    "tp": 82,
+    "n": 191
+  },
+  "loc": {
+    "miou": 0.1333019857840251,
+    "miou_per_sample": 0.08356550228019233,
+    "miou_tampered_only": 0.15978458677751062,
+    "n_tampered": 91,
+    "pixel_acc": 0.869601307064056,
+    "dice": 0.23524530523399018,
+    "f1": 0.23524530523399018,
+    "n_pixels": 9583616
+  },
+  "zero_shot": true,
+  "note": "复制-移动（copy-move）篡改，官方 100 对；与训练域（ForenSynths 生成图 / CASIAv2 拼接·复制移动）**不同源**，全程未参与训练 ⇒ 这是**零样本跨数据集**结果。",
+  "loc_pool_warning": "定位池含 100 张全零 GT 的真实图（掩码文件存在但无前景）。只有 miou_tampered_only 跨数据集可比；其余三个含真实图像素，受误报影响，不可与 CASIAv2 的同名指标并列。",
+  "cmd": "python scripts/eval_external_domain.py --domain COVERAGE --ckpt checkpoints/vibnet_best.pt --device cpu --cpu-threads 8 --expect 191 --out outputs/coverage_ext --tag ckpt0928"
+}
