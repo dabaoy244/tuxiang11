@@ -1,0 +1,67 @@
+==========================================================================
+ VIB KL / 梯度范数诊断
+==========================================================================
+ 权重      : outputs/upload/results_20260928/_pack/vibnet_best.pt
+ 设备      : cpu
+ 生成器    : ['biggan', 'cyclegan', 'stylegan2', 'crn']（每生成器每类 4 张）
+ 权重内记录: epoch=46 stage=stage3_joint_finetune β=0.1
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 42973.10it/s]
+[transformers] [1mCLIPVisionModel LOAD REPORT[0m from: pretrained/clip-vit-base-patch16
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+text_projection.weight                                       | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+visual_projection.weight                                     | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+[CLIPViTBackbone] 检测到 transformers>=5 的扁平布局，已补 `vision_model.` 包装以对齐 4.x 的键名（权重内容无差异）。
+[CLIPViTBackbone] 冻结前 6/12 层，可训练参数 42.53M / 85.80M
+
+ [键核对] missing=0 unexpected=0  （应为 0/0；非 0 说明有模块没装上还被静默放过）
+
+ [设定] kl_clip=[0.0, 10.0] kl_reduction=mean kl_clip_grad_through=True
+ [设定] grad_clip_norm=5.0  beta_max=0.1  warmup=20→40
+
+ [数据] 候选 32 张（真 16 / 假 16）
+
+--------------------------------------------------------------------------
+ ① KL 分布：β 取 stage1(0.0) 与 stage3(0.1) 两种设定
+--------------------------------------------------------------------------
+  β=0.0  kl_raw  mean=0.0234  min=0.0206  max=0.0264   命中裁剪上限次数=0/3   σ̄=0.9817
+  β=0.1  kl_raw  mean=0.0234  min=0.0206  max=0.0264   命中裁剪上限次数=0/3   σ̄=0.9817
+  → 合计 6 个 batch：kl_raw 均值 0.0234，最大 0.0264，触发 [0,10.0] 上限 0 次
+
+--------------------------------------------------------------------------
+ ② 梯度范数：backward 后、clip 前的总范数（与 grad_clip 比）
+--------------------------------------------------------------------------
+  β=0.0  grad_norm  mean=263.813  min=108.920  max=418.706   > 5.0 的次数=2/2   裁剪缩放比=0.012
+  β=0.1  grad_norm  mean=109.874  min=89.110  max=130.638   > 5.0 的次数=2/2   裁剪缩放比=0.038
+
+==========================================================================
+ 判读
+==========================================================================
+  KL 裁剪：从未触发（安全阀，VIB 未被静默关闭）
+  梯度裁剪：确实触发（策略在起作用）
+
+ 已写出：outputs/diag\vib_kl_gradnorm.json

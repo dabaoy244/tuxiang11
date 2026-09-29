@@ -147,8 +147,16 @@ model:
     hidden_dim: 256
     latent_dim: 256
     beta_max: 0.1
-    beta_warmup_start: 20        # t<20: β=0
-    beta_warmup_end: 40          # 20≤t<40 线性升到 0.1；t≥40 恒为 0.1
+    # ★ β 退火的"锚"（2026-09-29 修，见 docs/22 §2.2(b)）：
+    #   vib    = 锚在「VIB 真的进损失的轮次」上（推荐）。stage2 只训 loc/edge、
+    #            且 freeze=[vib,cls_head]，那 20 轮不计步 ⇒ 升温会落在 stage3 内部。
+    #   global = 旧行为（锚在全局轮次），保留仅为复现 09-28 那次训练。
+    #   ⚠ 旧行为下 warmup 的 20 轮恰好整个落在 stage2（VIB 不进损失+被冻结），
+    #     退火退化成 stage1→stage3 的一次 0→0.1 阶跃。
+    #   trainer 启动时会断言"升温区间 ∩ VIB 参与区间 ≠ ∅"，为空直接报错。
+    beta_anchor: "vib"
+    beta_warmup_start: 20        # anchor<20: β=0
+    beta_warmup_end: 40          # 20≤anchor<40 线性升到 0.1；anchor≥40 恒为 0.1
     kl_clip_min: 0.0
     kl_clip_max: 10.0
     # KL 归约口径：
@@ -220,7 +228,10 @@ train:
       freeze: []
       train: ["all"]
       use_tasks: ["cls", "loc", "edge"]
-      beta_epoch_offset: 20            # 承接 β 退火：t=20 起开始升 β
+      beta_epoch_offset: 0             # ★ 必须为 0：锚已交给 model.vib.beta_anchor='vib' 处理。
+                                       #   旧值 20 在 'global' 锚下是空操作（t=40+20=60 已饱和），
+                                       #   在 'vib' 锚下却会把起始锚从 20 直接推到 40，β 一上来就
+                                       #   是 0.1 —— 退火被跳过。trainer 会对此硬失败。
       monitor: "val_cls_auc"
 
   optimizer: "adamw"

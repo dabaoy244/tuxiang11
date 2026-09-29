@@ -240,6 +240,19 @@ class Trainer:
                      f"global_epoch={global_epoch}（保证 beta 退火接得上）")
         vcfg = self.cfg["model"]["vib"]
 
+        # ★ β 退火的"锚"（2026-09-29 修，见 docs/22 §2.2(b)）
+        #   原实现把 β 锚在 global_epoch 上，于是"升温的 20 轮"（t=20..39）
+        #   恰好整个落在 stage2 —— 而 stage2 是 use_tasks=["loc","edge"]、
+        #   freeze=["vib","cls_head"]，**VIB 既不进损失、参数也被冻结**。
+        #   结果"退火"实跑成 stage1→stage3 之间的一次 0→0.1 阶跃，而且
+        #   发生在解冻那一瞬间（正是退火本来要避免的情形）。
+        #   现在默认锚在 vib_epoch（只在"VIB 真的进损失"的轮次上计步）。
+        beta_anchor = str(vcfg.get("beta_anchor", "vib")).lower()
+        if beta_anchor not in ("vib", "global"):
+            raise ValueError(f"model.vib.beta_anchor 只能是 'vib' 或 'global'，收到 {beta_anchor!r}")
+        vib_epoch = 0
+        self._check_beta_window(vcfg, beta_anchor)
+
         for si, stage in enumerate(self.stages):
             if si < start_stage:
                 continue
@@ -266,12 +279,17 @@ class Trainer:
 
             for ep in range(stage.epochs):
                 t0 = time.time()
+                # anchor="vib"   → 只在 VIB 参与损失（use_tasks 含 cls）的轮次上推进计步
+                # anchor="global"→ 旧行为（锚在全局轮次），保留以便复现 09-28 那次训练
+                anchor = vib_epoch if beta_anchor == "vib" else global_epoch
                 beta = beta_schedule(
-                    global_epoch + stage.beta_epoch_offset,
+                    anchor + stage.beta_epoch_offset,
                     vcfg.get("beta_max", 0.1),
                     vcfg.get("beta_warmup_start", 20),
                     vcfg.get("beta_warmup_end", 40),
                 )
+                if "cls" in stage.use_tasks:
+                    vib_epoch += 1
                 tr = self._train_one_epoch(opt, stage, beta, global_epoch)
                 sched.step()
                 lr_now = opt.param_groups[0]["lr"]
@@ -298,6 +316,9 @@ class Trainer:
                 msg = (f"[{stage.name}] epoch {ep+1}/{stage.epochs} (global {global_epoch}) "
                        f"lr={lr_now:.2e} beta={beta:.3f} loss={tr['loss']:.4f} "
                        f"raw={ {k: round(v,4) for k,v in tr['raw'].items()} } "
+                       f"kl_raw={tr['diag'].get('kl_raw', float('nan')):.4f} "
+                       f"kl_clip={tr['diag'].get('kl_clipped', float('nan')):.4f} "
+                       f"grad_norm={tr['grad_norm']:.1f} "
                        f"({time.time()-t0:.1f}s)")
                 self.log(msg)
 
@@ -401,6 +422,76 @@ class Trainer:
         return -v if "loss" in key else v        # 损失类越小越好 → 取负
 
     # ==================================================================
+    def _check_beta_window(self, vcfg: dict, beta_anchor: str) -> None:
+        """启动自检：β 的升温区间必须与「VIB 真的进损失」的轮次有交集。
+
+        把 docs/22 §2.2(b) 那个失效模式变成**硬失败**的防线。
+        原实现里 β 升满 20 轮，而 VIB 全程被冻结且不进损失 ——
+        配置合法（beta_max / beta_warmup_start / beta_warmup_end 都写了）、
+        日志里 β 轨迹也漂亮，但退火对任何东西都没有影响。
+        "配置合法、日志好看、语义为空"这类错必须启动即报错，不能等答辩时被问穿。
+        """
+        beta_max = float(vcfg.get("beta_max", 0.1))
+        warm_s = float(vcfg.get("beta_warmup_start", 20))
+        warm_e = float(vcfg.get("beta_warmup_end", 40))
+        if warm_e <= warm_s:
+            raise ValueError(f"beta_warmup_end({warm_e}) 必须大于 beta_warmup_start({warm_s})")
+
+        # 枚举每个全局轮次：它的锚值、以及该轮 VIB 是否参与损失
+        rows = []          # (global_epoch, stage_name, anchor, cls_on)
+        vib_ep = 0
+        for stage in self.stages:
+            for _ in range(stage.epochs):
+                cls_on = "cls" in stage.use_tasks
+                anchor = (vib_ep if beta_anchor == "vib" else len(rows)) + stage.beta_epoch_offset
+                rows.append((len(rows), stage.name, anchor, cls_on))
+                if cls_on:
+                    vib_ep += 1
+
+        # 升温 = β 严格介于 0 与 beta_max 之间（在 warm_s / warm_e 两端是平的）
+        warming = [r for r in rows if warm_s < r[2] < warm_e]
+        max_anchor = max(r[2] for r in rows)
+        if not warming:
+            if max_anchor < warm_s:
+                # 锚值根本没走到 warmup 就结束了 —— 这是"退火**未启用**"，
+                # 与"退火被跳过 / 是空操作"是两回事。demo / --epochs-scale 0.05
+                # 这类短跑天然如此，只警告、不失败（否则冒烟测试全被打死）。
+                self.log(f"    [beta] ⚠ 锚={beta_anchor}，本轮最大锚值 {max_anchor:g} < "
+                         f"warmup_start {warm_s:g} ⇒ β 全程恒为 0，退火未启用"
+                         f"（短跑 / 小 epochs-scale 时正常；正式训练请核对）")
+                return
+            # 锚值已经越过整个升温区间，却没有任何一轮落在区间内 ⇒ 退火被跳过。
+            # 这是 2026-09-29 实测踩到的：只把 beta_anchor 改成 'vib'、却留着
+            # stage3.beta_epoch_offset=20，于是 stage3 的锚从 20 直接跳到 40
+            # （= warm_e），β 一上来就是 0.1 —— 症状和原来一模一样。
+            raise RuntimeError(
+                f"β 退火被**跳过**：锚值越过了整个升温区间 [{warm_s:g},{warm_e:g})，"
+                f"其中一轮都没落进去。\n"
+                f"  锚模式      : {beta_anchor}\n"
+                f"  锚值取值    : {sorted({r[2] for r in rows})[:8]} ... 最大 {max_anchor:g}\n"
+                f"  典型原因    : stages[].beta_epoch_offset 过大 —— 它在 'global' 锚下是空操作，"
+                f"在 'vib' 锚下却会把 stage3 的起始锚直接推过 warm_e。\n"
+                f"  修法        : 把各 stage 的 beta_epoch_offset 置 0，并保持 beta_anchor='vib'。")
+        overlap = [r for r in warming if r[3]]
+        if not overlap:
+            first = warming[0]
+            raise RuntimeError(
+                f"β 的升温区间与「VIB 参与损失」的轮次**没有交集** —— 退火对任何东西都不起作用。\n"
+                f"  锚模式      : {beta_anchor}\n"
+                f"  升温区间    : {warm_s:g} < anchor < {warm_e:g}（共 {len(warming)} 轮，"
+                f"如 global {warming[0][0]}..{warming[-1][0]}，落在阶段 {warming[0][1]}）\n"
+                f"  VIB 参与轮次: 共 {sum(1 for r in rows if r[3])} 轮"
+                f"（阶段 {sorted({r[1] for r in rows if r[3]})}）\n"
+                f"  → 升温那 {len(warming)} 轮里 VIB 不进损失（use_tasks 无 cls），"
+                f"参数还可能被 freeze —— 这正是 09-28 那次训练的问题。\n"
+                f"  两种修法：① model.vib.beta_anchor='vib'（默认，把锚移到 VIB 参与的轮次）；"
+                f"② 调整 warmup 区间或 stages 轮数使其有交集。")
+
+        self.log(f"    [beta] 锚={beta_anchor}  升温区间 {warm_s:g}<anchor<{warm_e:g} → "
+                 f"global {warming[0][0]}~{warming[-1][0]}（{len(warming)} 轮）；"
+                 f"与 VIB 参与轮次交集 {len(overlap)} 轮 ✓")
+
+    # ==================================================================
     def _train_one_epoch(self, opt, stage: StageConfig, beta: float, global_epoch: int) -> dict:
         self.model.train()
         # 冻结的 BN / Dropout 仍需正确的 train/eval 语义：冻结模块强制 eval
@@ -414,6 +505,14 @@ class Trainer:
         n_empty = 0                      # 无任何可用监督项的批次（整批无掩码）
         raw_acc: Dict[str, float] = {}
         weight_last: Dict[str, float] = {}
+        # ★ 可观测性（2026-09-29，docs/22 §2.2）：此前 train_log 全文搜 `kl` /
+        #   `grad_norm` / `clip` 均 0 次命中 —— 三个稳定机制里只有 β 有日志，
+        #   另外两个只能事后重算（每次重新加载 362MB 权重）。这里把
+        #   ① KL 原始值/裁剪后值（来自 criterion 的 diag）
+        #   ② 梯度总范数（clip_grad_norm_ 的返回值 = 裁剪**前**的范数）
+        #   逐 epoch 平均后写进日志与 history.json。
+        diag_acc: Dict[str, float] = {}
+        grad_norm_acc = 0.0
         log_every = self.cfg["train"].get("log_every", 50)
         t0 = time.time()
 
@@ -447,18 +546,24 @@ class Trainer:
             if self.scaler is not None:
                 self.scaler.scale(loss).backward()
                 self.scaler.unscale_(opt)
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
+                # clip_grad_norm_ 的返回值 = 裁剪**前**的总范数。
+                # 实测本项目为 89~419（阈值 5.0）⇒ 缩放比仅 0.012~0.038，
+                # 即"每步都触发、但近乎空操作"。必须记下来才能支撑这句话。
+                gn = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
                 self.scaler.step(opt)
                 self.scaler.update()
             else:
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
+                gn = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
                 opt.step()
+            grad_norm_acc += float(gn)
 
             total_loss += float(loss.detach())
             nb += 1
             for k, v in losses["raw"].items():
                 raw_acc[k] = raw_acc.get(k, 0.0) + v
+            for k, v in losses.get("diag", {}).items():
+                diag_acc[k] = diag_acc.get(k, 0.0) + float(v)
             weight_last = losses["weights"]
 
             if (it + 1) % log_every == 0:
@@ -471,6 +576,10 @@ class Trainer:
             "weights": weight_last,
             "n_batches": nb,
             "empty_batches": n_empty,
+            # 裁剪前梯度总范数（epoch 内平均）；无有效批次时记 0.0
+            "grad_norm": grad_norm_acc / max(1, nb),
+            # KL / β·KL 的 epoch 平均（该阶段未启用 cls 时为空 dict）
+            "diag": {k: v / max(1, nb) for k, v in diag_acc.items()},
         }
 
     # ==================================================================

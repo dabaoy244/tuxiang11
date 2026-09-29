@@ -305,9 +305,20 @@ class MultiTaskLoss(nn.Module):
         active = set(active_tasks) if active_tasks else {"cls", "loc", "edge"}
         raw: Dict[str, torch.Tensor] = {}
         skipped: Dict[str, str] = {}
+        # ★ 只读诊断量（2026-09-29）。**绝不能放进 raw**：raw 下面会被逐项
+        #   归一化（公式 30）并加权求和成 total（公式 31），多一个键就等于
+        #   往目标函数里多加一项损失 —— 那是个静默改变训练目标的事故。
+        #   所以 KL 的原始值/裁剪后值单列在这里，只用于观测。
+        diag: Dict[str, float] = {}
 
         if "cls" in active:
             raw["vib"] = vib_loss(outputs["cls_logits"], labels, outputs["kl"], beta)
+            # KL 是否触发 [kl_min, kl_max] 裁剪，此前只能靠事后诊断脚本重算
+            # （每次都要重新加载 362MB 权重）。这里逐批次记下来，让它变成
+            # 训练日志里可查的一等量。见 docs/22 §2.2。
+            diag["kl_raw"] = float(outputs["kl_raw"].detach())
+            diag["kl_clipped"] = float(outputs["kl"].detach())
+            diag["beta_kl"] = float(beta) * diag["kl_raw"]
         else:
             skipped["vib"] = "本阶段未启用分类任务"
 
@@ -374,6 +385,7 @@ class MultiTaskLoss(nn.Module):
             "normed": {k: float(v.detach()) for k, v in normed.items()},
             "weights": weight_detail,
             "skipped": skipped,
+            "diag": diag,
         }
 
     # ------------------------------------------------------------------

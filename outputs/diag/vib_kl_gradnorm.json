@@ -1,0 +1,107 @@
+{
+  "ckpt": "outputs/upload/results_20260928/_pack/vibnet_best.pt",
+  "epoch": 46,
+  "stage": "stage3_joint_finetune",
+  "key_check": {
+    "missing": 0,
+    "unexpected": 0
+  },
+  "settings": {
+    "kl_clip_max": 10.0,
+    "grad_clip_norm": 5.0,
+    "beta_max": 0.1,
+    "beta_warmup": [
+      20,
+      40
+    ],
+    "beta_schedule_probe": {
+      "t=0": 0.0,
+      "t=19": 0.0,
+      "t=20": 0.0,
+      "t=39": 0.095,
+      "t=40": 0.1,
+      "t=54": 0.1
+    }
+  },
+  "forward": {
+    "beta_0.0": [
+      {
+        "kl_raw": 0.020585481077432632,
+        "kl_clipped": 0.020585481077432632,
+        "clamp_binds": false,
+        "sigma_min": 0.8273897767066956,
+        "sigma_max": 1.1516226530075073,
+        "sigma_mean": 0.9810828566551208,
+        "mu_abs_mean": 0.17292748391628265
+      },
+      {
+        "kl_raw": 0.026431778445839882,
+        "kl_clipped": 0.026431778445839882,
+        "clamp_binds": false,
+        "sigma_min": 0.8718968033790588,
+        "sigma_max": 1.030590534210205,
+        "sigma_mean": 0.9796038866043091,
+        "mu_abs_mean": 0.20477080345153809
+      },
+      {
+        "kl_raw": 0.023056956008076668,
+        "kl_clipped": 0.023056956008076668,
+        "clamp_binds": false,
+        "sigma_min": 0.9077478647232056,
+        "sigma_max": 1.0477298498153687,
+        "sigma_mean": 0.9845395684242249,
+        "mu_abs_mean": 0.1877521276473999
+      }
+    ],
+    "beta_0.1": [
+      {
+        "kl_raw": 0.020585481077432632,
+        "kl_clipped": 0.020585481077432632,
+        "clamp_binds": false,
+        "sigma_min": 0.8273897767066956,
+        "sigma_max": 1.1516226530075073,
+        "sigma_mean": 0.9810828566551208,
+        "mu_abs_mean": 0.17292748391628265
+      },
+      {
+        "kl_raw": 0.026431778445839882,
+        "kl_clipped": 0.026431778445839882,
+        "clamp_binds": false,
+        "sigma_min": 0.8718968033790588,
+        "sigma_max": 1.030590534210205,
+        "sigma_mean": 0.9796038866043091,
+        "mu_abs_mean": 0.20477080345153809
+      },
+      {
+        "kl_raw": 0.023056956008076668,
+        "kl_clipped": 0.023056956008076668,
+        "clamp_binds": false,
+        "sigma_min": 0.9077478647232056,
+        "sigma_max": 1.0477298498153687,
+        "sigma_mean": 0.9845395684242249,
+        "mu_abs_mean": 0.1877521276473999
+      }
+    ]
+  },
+  "grad_norm": {
+    "beta_0.0": [
+      418.7059631347656,
+      108.91960906982422
+    ],
+    "beta_0.1": [
+      130.6383056640625,
+      89.11000061035156
+    ]
+  },
+  "kl_summary": {
+    "n_batches": 6,
+    "mean": 0.023358071843783062,
+    "min": 0.020585481077432632,
+    "max": 0.026431778445839882,
+    "n_clamp_bind": 0
+  },
+  "verdict": {
+    "kl_clamp_is_active_safeguard": true,
+    "grad_clip_binds": true
+  }
+}

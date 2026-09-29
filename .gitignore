@@ -33,6 +33,11 @@ outputs/*.npz
 outputs/**/*.tar.gz
 outputs/ui_shot_results.pkl
 
+# ---- 第三方论文的提取正文（版权原因，不在公开仓库二次分发）----
+# 这是从他人 PDF 抽出的全文（含作者邮箱），仅供本地对照审计使用。
+# 复现时请自备 PDF，用 scripts/compare_with_paper_vibnet.py 重新抽取。
+outputs/diag/paper_*_raw.txt
+
 # ---- 结果包本体（362MB × 2 权重 + 531MB tar，不入库）----
 # 注意：只排除 _pack/ 目录本身，不要排除 results_20260928/，
 # 否则 git 不会进入该目录，里面的 PNG/SVG/MD 就无法被 add。

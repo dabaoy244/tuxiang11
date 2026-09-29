@@ -1,0 +1,40 @@
+{
+  "overlap_all": [
+    "progan",
+    "cyclegan",
+    "biggan",
+    "stylegan",
+    "stargan",
+    "gaugan",
+    "crn",
+    "imle",
+    "deepfake",
+    "san"
+  ],
+  "overlap_unseen": [
+    "cyclegan",
+    "biggan",
+    "stylegan",
+    "stargan",
+    "gaugan",
+    "crn",
+    "imle",
+    "deepfake",
+    "san"
+  ],
+  "paper_T3_AP_ours_mean_all": 96.96,
+  "paper_T4_ACC_ours_mean_all": 89.63,
+  "our_AP_mean_all": 85.33,
+  "our_ACC_mean_all": 68.5,
+  "paper_T3_AP_ours_mean_unseen": 96.62,
+  "paper_T4_ACC_ours_mean_unseen": 88.48,
+  "our_AP_mean_unseen": 83.71,
+  "our_ACC_mean_unseen": 65.0,
+  "delta_AP_unseen": -12.91,
+  "delta_ACC_unseen": -23.48,
+  "our_13gen_macro_ACC": 69.23,
+  "our_13gen_macro_AP": 86.05,
+  "our_13gen_macro_AUC": 87.76,
+  "our_13gen_macro_ACC_no_progan": 66.67,
+  "our_13gen_macro_AP_no_progan": 84.89
+}

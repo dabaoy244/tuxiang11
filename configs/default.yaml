@@ -101,8 +101,11 @@ model:
     hidden_dim: 256
     latent_dim: 256
     beta_max: 0.1
-    beta_warmup_start: 20        # t<20: β=0
-    beta_warmup_end: 40          # 20≤t<40 线性升到 0.1；t≥40 恒为 0.1
+    # ★ β 退火的"锚"（2026-09-29 修，见 docs/22 §2.2(b)）：见 default_crossval.yaml 同段注释。
+    #   vib（推荐）/ global（旧行为，仅用于复现 09-28 那次训练）
+    beta_anchor: "vib"
+    beta_warmup_start: 20        # anchor<20: β=0
+    beta_warmup_end: 40          # 20≤anchor<40 线性升到 0.1；anchor≥40 恒为 0.1
     kl_clip_min: 0.0
     kl_clip_max: 10.0
     # KL 归约口径：
@@ -174,7 +177,7 @@ train:
       freeze: []
       train: ["all"]
       use_tasks: ["cls", "loc", "edge"]
-      beta_epoch_offset: 20            # 承接 β 退火：t=20 起开始升 β
+      beta_epoch_offset: 0             # ★ 必须为 0；见 default_crossval.yaml 同段注释
       monitor: "val_cls_auc"
 
   optimizer: "adamw"
