@@ -149,7 +149,7 @@ def _self_test() -> None:
         print(f"  size={size:4d}  幅值最大误差={amp_err:.3e}  "
               f"相位最大圆周误差={phase_err:.3e}")
         ok &= amp_err < 1e-4 and phase_err < 1e-3
-    print("matmul 模式与 torch FFT 模式数值等价 ✓" if ok else "❌ 数值不等价")
+    print("matmul 模式与 torch FFT 模式数值等价 [OK]" if ok else "[x] 数值不等价")
     assert ok
 
 

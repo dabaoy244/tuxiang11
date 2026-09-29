@@ -217,7 +217,7 @@ def main() -> None:
     try:
         report["numeric_check"] = verify_quantized(args.onnx, args.out)
         ok = report["numeric_check"]["pass"] == 1.0
-        print(f"[int8] 数值一致性检查 {'通过 ✓' if ok else '未通过 ✗'}  "
+        print(f"[int8] 数值一致性检查 {'通过 [OK]' if ok else '未通过 [x]'}  "
               f"最大相对偏差 {report['numeric_check']['worst_rel_to_peak']:.4f}")
     except Exception as e:  # noqa: BLE001
         print(f"[int8] 数值检查跳过：{type(e).__name__}: {e}")

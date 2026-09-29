@@ -65,3 +65,17 @@ desktop.ini
 
 # ---- WorkBuddy 本地工作区状态 ----
 .workbuddy/
+
+# ---- 可见窗口工具链的运行时产物（脚本入 .py/.sh 已入库）----
+# 日志会持续增长、状态文件是本机临时量，都不该进库；
+# 但**不要**因此以为工具链没入库：vis.py / console_run.py / run_step.sh 是入库的。
+/outputs/screen/*.log
+/outputs/screen/*.log.done
+/outputs/screen/window_state.json
+/outputs/screen/console_hwnd.txt
+/outputs/screen/__pycache__/
+/outputs/screen/_probe_win*.py
+# 取证截图（交给老师/写进材料用）**故意不入库**：
+# 它们是可再生的运行产物，体量会持续增长；实体在 outputs/screenshots/ 下。
+# 若要随仓库留档，请显式 `git add -f outputs/screenshots/xxx.png`。
+/outputs/screenshots/

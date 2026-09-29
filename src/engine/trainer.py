@@ -306,10 +306,10 @@ class Trainer:
                            f"\"[data] split=train 共 N 条 ← ...\"："
                            f"CASIAv2 / COVERAGE 是否为 0 条（即为根因），"
                            f"再检查 data/Datasets 下的目录名与布局。")
-                    self.log(f"    ✗ {msg}")
+                    self.log(f"    [x] {msg}")
                     raise RuntimeError(msg)
                 if tr["empty_batches"]:
-                    self.log(f"    ⚠ 本 epoch {tr['empty_batches']} 个批次无可用监督"
+                    self.log(f"    [!] 本 epoch {tr['empty_batches']} 个批次无可用监督"
                              f"（整批都不带掩码）已跳过；有效批次 {tr['n_batches']}"
                              f"/{tr['n_batches'] + tr['empty_batches']}")
 
@@ -342,7 +342,9 @@ class Trainer:
                         # 打印原始值（metric 对损失类取过负号，直接打印会误导）
                         raw = record.get(self._monitor_key(mon), metric)
                         self.best_raw = float(raw)
-                        self.log(f"    ✔ 新的最佳 {mon}={self.best_raw:.4f}，"
+                        # 2026-09-29：原来这里用 '✔'，中文控制台字体没这个字形，
+                        # 截图里渲染成方框（取证材料上很难看）→ 统一改 ASCII 标记。
+                        self.log(f"    [+] 新的最佳 {mon}={self.best_raw:.4f}，"
                                  f"已保存 best.pt")
                     else:
                         patience += 1
@@ -456,7 +458,7 @@ class Trainer:
                 # 锚值根本没走到 warmup 就结束了 —— 这是"退火**未启用**"，
                 # 与"退火被跳过 / 是空操作"是两回事。demo / --epochs-scale 0.05
                 # 这类短跑天然如此，只警告、不失败（否则冒烟测试全被打死）。
-                self.log(f"    [beta] ⚠ 锚={beta_anchor}，本轮最大锚值 {max_anchor:g} < "
+                self.log(f"    [beta] [!] 锚={beta_anchor}，本轮最大锚值 {max_anchor:g} < "
                          f"warmup_start {warm_s:g} ⇒ β 全程恒为 0，退火未启用"
                          f"（短跑 / 小 epochs-scale 时正常；正式训练请核对）")
                 return
@@ -489,7 +491,7 @@ class Trainer:
 
         self.log(f"    [beta] 锚={beta_anchor}  升温区间 {warm_s:g}<anchor<{warm_e:g} → "
                  f"global {warming[0][0]}~{warming[-1][0]}（{len(warming)} 轮）；"
-                 f"与 VIB 参与轮次交集 {len(overlap)} 轮 ✓")
+                 f"与 VIB 参与轮次交集 {len(overlap)} 轮 [OK]")
 
     # ==================================================================
     def _train_one_epoch(self, opt, stage: StageConfig, beta: float, global_epoch: int) -> dict:
