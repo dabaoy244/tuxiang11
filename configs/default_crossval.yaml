@@ -1,0 +1,279 @@
+# ============================================================================
+# 空频双分支轻量 VIB-Net  ——  **跨生成器验证集（val_cross）** 训练/评测配置
+# 对应申报书：图表2 技术路线、1.1~1.4 各模块、6.3 预期成果
+# ----------------------------------------------------------------------------
+# 与 configs/default.yaml 的唯一差别在 data 段，修的是一个**方法论**问题：
+#
+#   default.yaml 的 val = ForenSynths/val(8000, ProGAN) + CASIAv2/val(1261)。
+#   ForenSynths/val 与 train 是**同一个生成器（ProGAN）**，于是 val 上
+#   val_cls_auc 在 epoch 13 就到 0.9995 并一直饱和 —— 用饱和的验证集挑
+#   best.pt，再拿"跨生成器 test"报指标，两者必然对不上
+#   （2026-09-28 实测：val AUC 0.9981 vs 混合 test 0.9051）。
+#
+# 本配置把验证集换成**留出生成器**上的 val_cross：
+#   留出 3 个中等规模生成器（biggan / cyclegan / stargan）**只用于模型选择**，
+#   并从 test 的宏平均里一并剔除；test 仍保留 progan 之外的全部难例
+#   （san / seeingdark / gaugan / imle / crn / stylegan / stylegan2 ...），
+#   避免"把难例挪进验证集、测试集变简单"这种自欺。
+#
+# ⚠️ 口径变更提示：本配置跑出的指标**不能**与 default.yaml 的历史结果
+#    （2026-09-28 那一次：混合 test ACC 0.7621 / CASIAv2 0.9382）直接并列，
+#    因为评测集的生成器组成变了。报数时务必写明用的是哪个协议。
+#   验收判据见 docs/21_P0无卡诊断结果.md §四。
+# ============================================================================
+
+project:
+  name: "VIB-Net AI图像篡改检测 (val_cross)"
+  version: "1.0"
+  seed: 3407
+  output_dir: "outputs/run_crossval"
+  ckpt_dir: "checkpoints"
+
+# ---------------------------------------------------------------- 数据
+data:
+  # backbone: 数据集根目录需按 docs/03 的目录规范组织
+  root: "data/Datasets"
+  image_size: 224
+  num_workers: 4
+  pin_memory: true
+
+  # 训练集：跨生成模型综合数据集（真实 + GAN + 扩散 + 自回归）
+  train_sets:
+    - name: "ForenSynths"
+      kind: "gensynth"        # 整图真伪（无像素掩码）
+      split: "train"
+      max_samples: 40000
+    - name: "CASIAv2"
+      kind: "tamper"          # 传统篡改（有像素掩码）
+      split: "train"
+      max_samples: 6000
+    - name: "COVERAGE"
+      kind: "tamper"
+      split: "train"
+      max_samples: 120
+
+  # 测试集：三个公开标准数据集，分别评估不同维度
+  #
+  # ⚠️ ForenSynths 这里**剔除**了被留作 val_cross 的 3 个生成器。
+  #    目的：验证集与测试集互不重叠，模型选择与最终报数用同一套"没见过的生成器"
+  #    口径。宏平均的完整 13 生成器 / 严格跨生成器（再去掉 progan）两个数，
+  #    请用 scripts/eval_cross_generator.py 单独跑并对照（见 docs/21 §四）。
+  test_sets:
+    - name: "ForenSynths"
+      kind: "gensynth"
+      split: "test"
+      max_samples: 20000
+      exclude_generators: ["biggan", "cyclegan", "stargan"]
+    - name: "CASIAv2"
+      kind: "tamper"
+      split: "test"
+      max_samples: 2000
+    - name: "COVERAGE"
+      kind: "tamper"
+      split: "test"
+      max_samples: 100
+
+  # 验证集：★ 本配置的核心改动 —— 用"留出生成器"替代与 train 同源的 ProGAN val
+  #   · ForenSynths val_cross：biggan / cyclegan / stargan，每生成器真/假各 400
+  #     （split 必须写 test —— 生成器层级只存在于 ForenSynths/test/ 下）
+  #   · CASIAv2/val：定位支路的 val_loc_miou 靠它（掩码）
+  #   预期效果：val_cls_auc 从 0.9995（饱和）落到 0.90~0.95 区间，
+  #   从而恢复区分度、让 best.pt 的挑选依据重新有效。
+  val_sets:
+    - name: "ForenSynths"
+      kind: "gensynth"
+      split: "test"
+      include_generators: ["biggan", "cyclegan", "stargan"]
+      max_per_generator: 400
+    - name: "CASIAv2"
+      kind: "tamper"
+      split: "val"
+      max_samples: 1261
+    - name: "COVERAGE"
+      kind: "tamper"
+      split: "val"
+      max_samples: 100
+
+  # 离线演示数据集（无网络/无 GPU 时可端到端跑通全流程）
+  demo:
+    root: "data/demo"
+    train_pairs: 240
+    val_pairs: 60
+    test_pairs: 60
+
+# ---------------------------------------------------------------- 模型
+model:
+  # 空域分支
+  spatial:
+    backbone: "clip_vit_b16"     # clip_vit_b16 | tiny_vit(离线兜底/轻量档)
+    # 骨干规模档位（见 docs/09_指标可达性与骨干选型.md）：
+    #   b16  -> 768维/12层   骨干 85.81M   全模型 FP32 362.1MB  ❌ 超 120MB 指标
+    #   s16  -> 384维/12层   骨干 21.68M   全模型 FP32 104.8MB  ✅
+    #   ti16 -> 192维/12层   骨干  5.54M   全模型 FP32  39.8MB  ✅
+    #   ti8  -> 192维/ 8层   骨干  3.76M   全模型 FP32  32.7MB  ✅
+    # 结论：要同时满足「≤120MB」和「用 CLIP-ViT-B/16」，必须 INT8 量化；
+    #       否则请把 backbone_variant 降到 s16 及以下（见 configs/lite.yaml）。
+    backbone_variant: "b16"
+    clip_pretrained: "openai/clip-vit-base-patch16"
+    clip_local_dir: "pretrained/clip-vit-base-patch16"   # 离线权重目录（可选）
+    freeze_first_n_layers: 6     # 冻结前 6 层，微调后 6 层
+    unfreeze_last_n_layers: 6
+    global_dim: 768              # CLIP-ViT-B/16 隐藏维度
+    local_channels: [32, 64, 128]  # 3 层深度可分离卷积
+    local_dim: 128
+
+  # 频域分支
+  freq:
+    mask_hidden: 32              # 可学习频域掩码第 1 层通道
+    mask_kernel: 5
+    feat_channels: [32, 128]     # 双路特征提取 3x3 卷积
+    amp_dim: 128
+    phase_dim: 128
+    # 2D-DFT 实现方式：
+    #   torch  -> torch.fft.fft2，训练用，GPU 上最快
+    #   matmul -> 固定 DFT 矩阵乘法，**导出 ONNX 前会自动切到这个**，
+    #             因为 aten::fft_fft2 无法导出到 opset 17（详见 src/models/dft.py）
+    dft_mode: "torch"
+    use_phase: true              # 消融开关：是否使用相位支路
+    use_learnable_mask: true     # 消融开关：可学习掩码 vs 固定中频掩码
+
+  # 空频融合 CS-CAM
+  fusion:
+    dim: 512
+    use_cross_attention: true    # 消融开关：False → 直接通道拼接
+
+  # 分层 VIB
+  vib:
+    hidden_dim: 256
+    latent_dim: 256
+    beta_max: 0.1
+    beta_warmup_start: 20        # t<20: β=0
+    beta_warmup_end: 40          # 20≤t<40 线性升到 0.1；t≥40 恒为 0.1
+    kl_clip_min: 0.0
+    kl_clip_max: 10.0
+    # KL 归约口径：
+    #   mean -> 对 batch 与 latent 维都取均值（默认；数值 0.0x~几，[0,10] 裁剪合理）
+    #   sum  -> 对 latent 维求和（Alemi 原始 VIB 写法；数值常达几十~几百，
+    #           此时 [0,10] 会常态化触发，需配合 kl_clip_grad_through=true）
+    kl_reduction: "mean"
+    # 前向仍硬裁剪（满足公式 25 数值语义），反向按恒等传递，
+    # 避免 KL 超上限后梯度归零、VIB 被静默关闭。
+    kl_clip_grad_through: true
+    use_vib: true                # 消融开关
+    apply_to: "cls_only"         # 仅作用于分类支路最后一层
+
+  # 定位支路
+  localization:
+    head: "mobile_unetv2"
+    encoder_channels: [64, 128, 256, 512]
+    encoder_strides: [1, 2, 2, 2]
+    use_edge_head: true          # 消融开关：Canny 边缘监督
+    use_grad_stop: true
+    gs_stop_cls: false           # True → 分类梯度不回传共享特征（严格解耦）
+    gs_stop_loc: false
+
+  head:
+    cls_hidden: 128
+    num_classes: 2
+
+# ---------------------------------------------------------------- 损失
+loss:
+  normalization: "zscore"        # zscore | none
+  zscore_window: 100             # 过去 100 个批次的滑动均值/标准差
+  terms: ["vib", "bce", "dice", "edge"]
+  uncertainty_weighting: true    # 同方差不确定性加权
+  weights:                       # uncertainty_weighting=false 时的固定权重
+    vib: 1.0
+    bce: 1.0
+    dice: 1.0
+    edge: 0.5
+  dice_smooth: 1.0
+
+# ---------------------------------------------------------------- 训练（三阶段）
+train:
+  stages:
+    - name: "stage1_cls_pretrain"
+      epochs: 20
+      lr: 1.0e-4
+      lr_min: 1.0e-6
+      weight_decay: 1.0e-5
+      freeze: ["localization"]
+      train: ["spatial", "freq", "fusion", "vib", "cls_head"]
+      use_tasks: ["cls"]
+      beta_epoch_offset: 0
+      monitor: "val_cls_auc"           # 只训分类 → 按分类 AUC 早停
+    - name: "stage2_loc_pretrain"
+      epochs: 20
+      lr: 5.0e-5
+      lr_min: 5.0e-7
+      weight_decay: 1.0e-5
+      freeze: ["vib", "cls_head"]
+      train: ["spatial", "freq", "fusion", "localization"]
+      use_tasks: ["loc", "edge"]
+      beta_epoch_offset: 0
+      monitor: "val_loc_miou"          # 分类头冻结，不能拿分类指标早停
+    - name: "stage3_joint_finetune"
+      epochs: 30
+      lr: 1.0e-5
+      lr_min: 1.0e-7
+      weight_decay: 1.0e-5
+      freeze: []
+      train: ["all"]
+      use_tasks: ["cls", "loc", "edge"]
+      beta_epoch_offset: 20            # 承接 β 退火：t=20 起开始升 β
+      monitor: "val_cls_auc"
+
+  optimizer: "adamw"
+  betas: [0.9, 0.999]
+  grad_clip_norm: 5.0                  # 梯度 L2 范数裁剪
+  amp: false                           # 云端 GPU 建议置 true（autocast 用 bf16）
+  amp_dtype: "bfloat16"                # bfloat16（推荐，无需 GradScaler）| float16
+  batch_size: 16
+  eval_every: 1
+  save_every: 5
+  log_every: 50
+  early_stop_patience: 8
+  # 早停依据的验证指标（全局默认；各阶段可用 stages[].monitor 覆盖）
+  #   val_cls_auc  分类 AUC      ← 推荐：与论文主打指标一致、跨轮可比
+  #   val_cls_acc / val_cls_f1
+  #   val_loc_miou 定位 mIoU
+  #   val_loss / val_total   验证损失 ⚠ 含可学习不确定性权重，尺度随训练漂移，
+  #                          跨轮不可比，会让"分类在变好"被判成"没提升"而早停
+  #                          （2026-09-25 云上实测：stage1 跑到第 11 轮就被它砍掉）
+  monitor: "val_cls_auc"
+
+# ---------------------------------------------------------------- 评测
+eval:
+  batch_size: 32
+  threshold: 0.5
+  metrics:
+    cls: ["acc", "precision", "recall", "f1", "auc", "ap"]
+    loc: ["miou", "pixel_acc", "dice", "f1"]
+  robustness:
+    jpeg_quality: [10, 20, 30, 50, 70, 90]
+    scale: [0.5, 0.75, 1.25, 1.5, 2.0]
+    crop_ratio: [0.1, 0.2, 0.3, 0.4, 0.5]
+    rotate: [0, 90, 180, 270]
+    gauss_std: [0.01, 0.02, 0.05]
+    saltpepper_density: [0.01, 0.02, 0.05]
+
+  ablation:                            # 消融实验开关组合（脚本按此逐项跑）
+    - "full"
+    - "no_learnable_mask"
+    - "no_phase"
+    - "no_cross_attention"
+    - "no_vib"
+    - "no_grad_stop"
+    - "no_edge"
+
+# ---------------------------------------------------------------- 部署
+deploy:
+  onnx_path: "deploy/vibnet.onnx"
+  onnx_simplified: "deploy/vibnet_simplified.onnx"
+  openvino_ir: "deploy/vibnet_ir/vibnet.xml"
+  opset_version: 17
+  do_constant_folding: true
+  export_params: true
+  dynamic_axes: true
+  target_model_size_mb: 120            # 申报书指标：模型体积 ≤ 120MB
+  target_cpu_fps: 8                    # 申报书指标：CPU ≥ 8 张/秒(224x224)

@@ -290,6 +290,13 @@ def render(per_gen: dict, overall: dict, meta: dict) -> str:
     L.append(f"- 配置：`{meta['config']}`　权重：`{meta['ckpt']}`")
     L.append(f"- 采样：每生成器每类 ≤{meta['per_class']} 张；"
              f"真图去重：{'是' if meta['dedup_real'] else '否'}；随机种子 {meta['seed']}")
+    # 生成器筛选是本表的口径来源：不写出来的话，同一份 config 在不同筛选下
+    # 会产出「同名不同义」的两张表（例如 val_cross 只覆盖 3 个留出生成器）。
+    if meta.get("include_generators") or meta.get("exclude_generators"):
+        _inc = ",".join(meta.get("include_generators") or []) or "全部"
+        _exc = ",".join(meta.get("exclude_generators") or []) or "无"
+        L.append(f"- **生成器筛选**：include=`{_inc}`　exclude=`{_exc}`"
+                 f"（本表只覆盖筛选后的生成器，勿与全量 13 生成器表混比）")
     L.append(f"- 推理：{meta['n_total']} 张，用时 {meta['seconds']:.0f} 秒，"
              f"batch={meta['batch_size']}\n")
     L.append("| 生成器 | 真/假样本数 | ACC | 真图ACC | 假图ACC | AUC | AP |")
@@ -315,6 +322,9 @@ def render(per_gen: dict, overall: dict, meta: dict) -> str:
     L.append("> 注：宏平均 = 先算各生成器的指标再取平均（每个生成器权重相同）；"
              "微平均 = 把所有样本合在一起算。")
     L.append("> 两者差异大说明模型在不同生成器上表现严重不均。")
+    if meta.get("cmd"):
+        L.append("")
+        L.append(f"> 复现命令：`{meta['cmd']}`")
     return "\n".join(L)
 
 
@@ -338,12 +348,21 @@ def main() -> int:
                          "scripts/audit_train_eval_overlap.py --write-exclude 生成；"
                          "清单里的图在**挑选之前**就从候选里剔除，"
                          "因此不会降低 --per-class 的取数")
+    ap.add_argument("--generators", default=None,
+                    help="只评测这些生成器（逗号分隔）。默认全部。"
+                         "用于单独评留出的 val_cross 生成器")
+    ap.add_argument("--exclude-generators", default=None,
+                    help="剔除这些生成器（逗号分隔）。用于报**严格跨生成器**宏平均时"
+                         "把「与训练同源的 progan」和「已留作验证集的生成器」踢出去")
     ap.add_argument("--out", default="outputs/cross_gen")
     ap.add_argument("--tag", default="")
     ap.add_argument("--scores-out", default=None,
                     help="把逐样本 (生成器, 标签, 分数) 存成 .npz。"
                          "★ 改指标定义后可用它免推理重算（推理是本脚本最贵的一步）")
     args = ap.parse_args()
+    args.generators = [g.strip() for g in (args.generators or "").split(",") if g.strip()]
+    args.exclude_generators = [g.strip() for g in
+                               (args.exclude_generators or "").split(",") if g.strip()]
 
     exclude = load_exclude_list(args.exclude_list) if args.exclude_list else None
 
@@ -353,6 +372,38 @@ def main() -> int:
     if not gens:
         print(f"❌ 没在 {root_abs} 下找到任何生成器目录。")
         return 1
+
+    # ---- 生成器级筛选（可选）-------------------------------------------------
+    # 两个用途：
+    #   ① 只评「被留出的 val_cross 生成器」——用来验证新验证集是否真的不再饱和；
+    #   ② 报严格跨生成器宏平均时，把「与训练同源的 progan」和
+    #      「已留作验证集的生成器」从测试集里剔除。
+    # ★ 这里刻意做成**硬失败**而不是静默过滤：生成器名写错（拼写/大小写/名字不存在）
+    #   会让宏平均在一个意外的小集合上算出来，数字还更好看 —— 那是彻头彻尾的
+    #   静默失效。所以名字对不上就直接报错并把盘上实际有的列出来。
+    if args.generators or args.exclude_generators:
+        inc = {g.lower() for g in args.generators}
+        exc = {g.lower() for g in args.exclude_generators}
+        have = {g.lower() for g in gens}
+        unknown = sorted((inc | exc) - have)
+        if unknown:
+            print(f"❌ 筛选条件里有不存在的生成器：{unknown}")
+            print(f"   盘上实际有：{sorted(gens)}")
+            return 1
+        kept, dropped = {}, []
+        for g, rec in gens.items():
+            gl = g.lower()
+            if (inc and gl not in inc) or (gl in exc):
+                dropped.append(g)
+                continue
+            kept[g] = rec
+        if not kept:
+            print("❌ 筛选后没有剩下任何生成器，请检查 --generators / "
+                  "--exclude-generators。")
+            return 1
+        print(f"\n[filter] 生成器筛选：保留 {len(kept)} 个，剔除 {len(dropped)} 个"
+              f"（{'、'.join(sorted(dropped))}）")
+        gens = kept
 
     print("=" * 74)
     print(" 跨生成器泛化评测")
@@ -411,6 +462,12 @@ def main() -> int:
         "dedup_real": not args.no_dedup_real,
         "n_total": len(plan), "seconds": secs,
         "batch_size": args.batch_size,
+        # 口径溯源：生成器筛选与原始命令行。缺了这两项，报告头只写 config
+        # 路径，读的人无法判断这张表覆盖的是哪几个生成器（曾经踩过）。
+        "include_generators": list(args.generators or []),
+        "exclude_generators": list(args.exclude_generators or []),
+        "cmd": "python " + " ".join([os.path.relpath(sys.argv[0], ROOT)]
+                                    + sys.argv[1:]),
     }
     per_gen, overall, md = summarize(names, y, probs, per_gen_meta, meta)
     print("\n" + md)

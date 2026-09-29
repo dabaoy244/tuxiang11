@@ -1,0 +1,102 @@
+
+[filter] 生成器筛选：保留 3 个，剔除 10 个（crn、deepfake、gaugan、imle、progan、san、seeingdark、stylegan、stylegan2、whichfaceisreal）
+==========================================================================
+ 跨生成器泛化评测
+==========================================================================
+
+找到 3 个生成器：
+  biggan             真   2000  假   2000
+  cyclegan           真   1321  假   1321
+  stargan            真   1999  假   1999
+  合计                 真   5320  假   5320
+
+评测计划：2400 张（真 1200 / 假 1200）
+[eval] 载入权重 outputs/upload/results_20260928/_pack/vibnet_best.pt（epoch=46, stage=stage3_joint_finetune）
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 52534.40it/s]
+[transformers] [1mCLIPVisionModel LOAD REPORT[0m from: pretrained/clip-vit-base-patch16
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_projection.weight                                       | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+visual_projection.weight                                     | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+libpng warning: iCCP: profile 'ICC Profile': 'GRAY': Gray color space not permitted on RGB PNG
+[CLIPViTBackbone] 检测到 transformers>=5 的扁平布局，已补 `vision_model.` 包装以对齐 4.x 的键名（权重内容无差异）。
+[CLIPViTBackbone] 冻结前 6/12 层，可训练参数 42.53M / 85.80M
+    推理 16/2400  6s 已用 / 预计还需 843s   libpng warning: iCCP: profile 'ICC Profile': 'desc': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'wtpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bkpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmnd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmdd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'vued': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'view': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'lumi': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'meas': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'tech': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bTRC': ICC profile tag start not a multiple of 4
+    推理 96/2400  33s 已用 / 预计还需 799s       推理 176/2400  61s 已用 / 预计还需 773s       推理 256/2400  90s 已用 / 预计还需 751s   libpng warning: iCCP: profile 'ICC Profile': 'desc': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'wtpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bkpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmnd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmdd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'vued': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'view': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'lumi': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'meas': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'tech': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bTRC': ICC profile tag start not a multiple of 4
+    推理 336/2400  118s 已用 / 预计还需 727s       推理 416/2400  147s 已用 / 预计还需 701s       推理 496/2400  175s 已用 / 预计还需 674s       推理 576/2400  204s 已用 / 预计还需 645s       推理 656/2400  233s 已用 / 预计还需 619s       推理 736/2400  262s 已用 / 预计还需 592s       推理 816/2400  291s 已用 / 预计还需 564s       推理 896/2400  319s 已用 / 预计还需 535s       推理 976/2400  347s 已用 / 预计还需 506s       推理 1056/2400  374s 已用 / 预计还需 477s       推理 1136/2400  402s 已用 / 预计还需 448s       推理 1216/2400  430s 已用 / 预计还需 419s       推理 1296/2400  458s 已用 / 预计还需 390s       推理 1376/2400  486s 已用 / 预计还需 362s       推理 1456/2400  514s 已用 / 预计还需 333s       推理 1536/2400  542s 已用 / 预计还需 305s       推理 1616/2400  570s 已用 / 预计还需 276s       推理 1696/2400  597s 已用 / 预计还需 248s       推理 1776/2400  625s 已用 / 预计还需 220s       推理 1856/2400  653s 已用 / 预计还需 191s       推理 1936/2400  681s 已用 / 预计还需 163s       推理 2016/2400  709s 已用 / 预计还需 135s       推理 2096/2400  737s 已用 / 预计还需 107s       推理 2176/2400  765s 已用 / 预计还需 79s       推理 2256/2400  793s 已用 / 预计还需 51s       推理 2336/2400  821s 已用 / 预计还需 22s   
+逐样本分数已存盘：outputs/val_cross_20260929/scores_valcross.npz（含文件基名，可用 scripts/report_third_domain.py 校验样本一致性；改指标定义后可用 scripts/recompute_cross_gen.py 免推理重算）
+
+# 跨生成器泛化评测（vibnet_best.pt）
+
+- 配置：`configs/default.yaml`　权重：`outputs/upload/results_20260928/_pack/vibnet_best.pt`
+- 采样：每生成器每类 ≤400 张；真图去重：是；随机种子 3407
+- 推理：2400 张，用时 843 秒，batch=16
+
+| 生成器 | 真/假样本数 | ACC | 真图ACC | 假图ACC | AUC | AP |
+|---|---|---|---|---|---|---|
+| biggan | 400/400 | 0.6800 | 0.3625 | 0.9975 | 0.9268 | 0.9127 |
+| cyclegan | 400/400 | 0.5150 | 0.0300 | 1.0000 | 0.8739 | 0.8300 |
+| stargan | 400/400 | 0.7612 | 0.5225 | 1.0000 | 0.9974 | 0.9973 |
+| **宏平均** | — | **0.6521** | **0.3050** | **0.9992** | **0.9327** | **0.9133** |
+| **微平均（合并全部样本）** | 1200/1200 | **0.6521** | 0.3050 | 0.9992 | 0.9137 | 0.8765 |
+
+> 注：宏平均 = 先算各生成器的指标再取平均（每个生成器权重相同）；微平均 = 把所有样本合在一起算。
+> 两者差异大说明模型在不同生成器上表现严重不均。
+
+已写出：
+  outputs/val_cross_20260929\cross_generator_20260929.md
+  outputs/val_cross_20260929\cross_generator_20260929.json

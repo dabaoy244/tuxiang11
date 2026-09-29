@@ -1,0 +1,48 @@
+{
+  "env": {
+    "platform": "Windows-10-10.0.19045-SP0",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "cpu_count": 7,
+    "onnxruntime": "1.30.0",
+    "torch": "2.14.0+cpu"
+  },
+  "image_size": 224,
+  "reps": 5,
+  "runs_per_rep": 20,
+  "rows": [
+    {
+      "model": "lite_simplified.onnx",
+      "size_MB": 98.7,
+      "intra_op_threads": "default",
+      "reps_ms": [
+        235.4,
+        164.3,
+        219.3,
+        250.7,
+        266.4
+      ],
+      "median_ms": 235.4,
+      "median_fps": 4.25,
+      "best_fps": 6.09,
+      "worst_fps": 3.75,
+      "meets_cpu_8fps": false
+    },
+    {
+      "model": "lite.onnx",
+      "size_MB": 99.2,
+      "intra_op_threads": "default",
+      "reps_ms": [
+        245.8,
+        258.7,
+        261.2,
+        263.6,
+        293.4
+      ],
+      "median_ms": 261.2,
+      "median_fps": 3.83,
+      "best_fps": 4.07,
+      "worst_fps": 3.41,
+      "meets_cpu_8fps": false
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+==========================================================================
+ 跨生成器泛化评测
+==========================================================================
+
+找到 13 个生成器：
+  biggan             真   2000  假   2000
+  crn                真   6382  假   6382
+  cyclegan           真   1321  假   1321
+  deepfake           真   2707  假   2698
+  gaugan             真   5000  假   5000
+  imle               真   6382  假   6382
+  progan             真   4000  假   4000
+  san                真    219  假    219
+  seeingdark         真    180  假    180
+  stargan            真   1999  假   1999
+  stylegan           真   5991  假   5991
+  stylegan2          真   7988  假   7988
+  whichfaceisreal    真   1000  假   1000
+  合计                 真  45169  假  45160
+
+评测计划：3900 张（真 1950 / 假 1950）
+[eval] 载入权重 outputs/upload/results_20260928/_pack/vibnet_best.pt（epoch=46, stage=stage3_joint_finetune）
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 44155.24it/s]
+[transformers] [1mCLIPVisionModel LOAD REPORT[0m from: pretrained/clip-vit-base-patch16
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+visual_projection.weight                                     | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+text_projection.weight                                       | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+libpng warning: iCCP: profile 'ICC Profile': 'GRAY': Gray color space not permitted on RGB PNG
+[CLIPViTBackbone] 检测到 transformers>=5 的扁平布局，已补 `vision_model.` 包装以对齐 4.x 的键名（权重内容无差异）。
+[CLIPViTBackbone] 冻结前 6/12 层，可训练参数 42.53M / 85.80M
+    推理 16/3900  6s 已用 / 预计还需 1389s   libpng warning: iCCP: profile 'ICC Profile': 'desc': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'wtpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bkpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmnd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmdd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'vued': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'view': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'lumi': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'meas': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'tech': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bTRC': ICC profile tag start not a multiple of 4
+    推理 96/3900  34s 已用 / 预计还需 1357s       推理 176/3900  62s 已用 / 预计还需 1317s       推理 256/3900  90s 已用 / 预计还需 1277s       推理 336/3900  117s 已用 / 预计还需 1243s       推理 416/3900  145s 已用 / 预计还需 1211s       推理 496/3900  172s 已用 / 预计还需 1183s       推理 576/3900  201s 已用 / 预计还需 1158s       推理 656/3900  228s 已用 / 预计还需 1128s       推理 736/3900  255s 已用 / 预计还需 1097s       推理 816/3900  282s 已用 / 预计还需 1067s       推理 896/3900  310s 已用 / 预计还需 1038s       推理 976/3900  337s 已用 / 预计还需 1010s       推理 1056/3900  364s 已用 / 预计还需 981s       推理 1136/3900  392s 已用 / 预计还需 953s       推理 1216/3900  419s 已用 / 预计还需 924s       推理 1296/3900  446s 已用 / 预计还需 896s       推理 1376/3900  473s 已用 / 预计还需 868s       推理 1456/3900  500s 已用 / 预计还需 840s       推理 1536/3900  528s 已用 / 预计还需 812s       推理 1616/3900  555s 已用 / 预计还需 785s       推理 1696/3900  582s 已用 / 预计还需 757s       推理 1776/3900  610s 已用 / 预计还需 729s       推理 1856/3900  637s 已用 / 预计还需 701s       推理 1936/3900  664s 已用 / 预计还需 674s       推理 2016/3900  693s 已用 / 预计还需 648s       推理 2096/3900  722s 已用 / 预计还需 621s       推理 2176/3900  750s 已用 / 预计还需 594s       推理 2256/3900  778s 已用 / 预计还需 567s       推理 2336/3900  806s 已用 / 预计还需 539s       推理 2416/3900  839s 已用 / 预计还需 516s       推理 2496/3900  898s 已用 / 预计还需 505s       推理 2576/3900  954s 已用 / 预计还需 490s       推理 2656/3900  1006s 已用 / 预计还需 471s       推理 2736/3900  1048s 已用 / 预计还需 446s       推理 2816/3900  1075s 已用 / 预计还需 414s       推理 2896/3900  1102s 已用 / 预计还需 382s       推理 2976/3900  1129s 已用 / 预计还需 351s       推理 3056/3900  1157s 已用 / 预计还需 319s       推理 3136/3900  1184s 已用 / 预计还需 288s       推理 3216/3900  1212s 已用 / 预计还需 258s       推理 3296/3900  1239s 已用 / 预计还需 227s       推理 3376/3900  1266s 已用 / 预计还需 197s       推理 3456/3900  1294s 已用 / 预计还需 166s       推理 3536/3900  1322s 已用 / 预计还需 136s       推理 3616/3900  1350s 已用 / 预计还需 106s       推理 3696/3900  1379s 已用 / 预计还需 76s       推理 3776/3900  1408s 已用 / 预计还需 46s       推理 3856/3900  1438s 已用 / 预计还需 16s   
+逐样本分数已存盘：outputs/cross_gen_20260928/scores.npz（含文件基名，可用 scripts/report_third_domain.py 校验样本一致性；改指标定义后可用 scripts/recompute_cross_gen.py 免推理重算）
+
+# 跨生成器泛化评测（vibnet_best.pt）
+
+- 配置：`configs/default.yaml`　权重：`outputs/upload/results_20260928/_pack/vibnet_best.pt`
+- 采样：每生成器每类 ≤150 张；真图去重：是；随机种子 3407
+- 推理：3900 张，用时 1454 秒，batch=16
+
+| 生成器 | 真/假样本数 | ACC | 真图ACC | 假图ACC | AUC | AP |
+|---|---|---|---|---|---|---|
+| biggan | 150/150 | 0.6833 | 0.3733 | 0.9933 | 0.9274 | 0.9203 |
+| crn | 150/150 | 0.5633 | 0.1400 | 0.9867 | 0.8030 | 0.7412 |
+| cyclegan | 150/150 | 0.5067 | 0.0133 | 1.0000 | 0.8940 | 0.8594 |
+| deepfake | 150/150 | 0.6367 | 0.3933 | 0.8800 | 0.7842 | 0.7904 |
+| gaugan | 150/150 | 0.5800 | 0.1600 | 1.0000 | 0.9143 | 0.8816 |
+| imle | 150/150 | 0.5867 | 0.1800 | 0.9933 | 0.8242 | 0.7605 |
+| progan | 150/150 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
+| san | 150/150 | 0.5400 | 0.6533 | 0.4267 | 0.5901 | 0.5844 |
+| seeingdark | 150/150 | 0.6233 | 0.2600 | 0.9867 | 0.8717 | 0.8384 |
+| stargan | 150/150 | 0.7833 | 0.5667 | 1.0000 | 0.9963 | 0.9969 |
+| stylegan | 150/150 | 0.9700 | 1.0000 | 0.9400 | 0.9986 | 0.9987 |
+| stylegan2 | 150/150 | 0.8800 | 1.0000 | 0.7600 | 0.9840 | 0.9853 |
+| whichfaceisreal | 150/150 | 0.6467 | 0.3600 | 0.9333 | 0.8204 | 0.8292 |
+| **宏平均** | — | **0.6923** | **0.4692** | **0.9154** | **0.8776** | **0.8605** |
+| **微平均（合并全部样本）** | 1950/1950 | **0.6923** | 0.4692 | 0.9154 | 0.8581 | 0.8584 |
+
+> 注：宏平均 = 先算各生成器的指标再取平均（每个生成器权重相同）；微平均 = 把所有样本合在一起算。
+> 两者差异大说明模型在不同生成器上表现严重不均。
+
+已写出：
+  outputs/cross_gen_20260928\cross_generator_20260928.md
+  outputs/cross_gen_20260928\cross_generator_20260928.json

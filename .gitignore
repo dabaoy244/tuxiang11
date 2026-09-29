@@ -1,6 +1,8 @@
 # ---- 数据集（本地 10 万+ 文件、下载归档 ~90GB，绝不入库）----
-data/
-!data/README.md
+# 注意：必须用前导 "/" 锚定到仓库根目录。
+# 写成裸的 "data/" 会连带匹配 src/data/，把整个数据加载源码包静默排除出库。
+/data/
+!/data/README.md
 
 # ---- 模型权重（单文件 345MB × 26 个）----
 checkpoints/
@@ -10,7 +12,8 @@ pretrained/
 *.ckpt
 
 # ---- 部署产物（ONNX / IR / exe）----
-deploy/
+# 同样必须锚定到根目录，否则会匹配 src/deploy/（推理与量化源码）。
+/deploy/
 *.onnx
 *.bin
 *.xml
@@ -22,6 +25,10 @@ outputs/_archive/
 outputs/_piptest/
 outputs/class_verify/
 outputs/cross_gen_scores/
+# ⚠ 注意：这条只挡 outputs/ 根目录下的散落 .npz，**不匹配** outputs/<run>/*.npz
+# （gitignore 的 * 不跨 /）。各次运行目录里的 scores*.npz 是「免推理重算」缓存，
+# 单文件仅 20~40 KB，是刻意保留的，别误以为它已被忽略；真出现大体积分数包时，
+# 请显式写成 outputs/*/*.npz 或把该运行目录整条加进来。
 outputs/*.npz
 outputs/**/*.tar.gz
 outputs/ui_shot_results.pkl

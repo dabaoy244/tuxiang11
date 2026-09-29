@@ -1,0 +1,116 @@
+[diag] 已加载权重 outputs/upload/results_20260928/_pack/vibnet_best.pt
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 49765.47it/s]
+[transformers] [1mCLIPVisionModel LOAD REPORT[0m from: pretrained/clip-vit-base-patch16
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+visual_projection.weight                                     | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+text_projection.weight                                       | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+[CLIPViTBackbone] 检测到 transformers>=5 的扁平布局，已补 `vision_model.` 包装以对齐 4.x 的键名（权重内容无差异）。
+[CLIPViTBackbone] 冻结前 6/12 层，可训练参数 42.53M / 85.80M
+[diag] 模型参数量 90.53 M  image_size=224  device=cpu
+[TamperDataset] CASIAv2/test: 载入 1263 条（篡改 513 / 真实 750，掩码 1263 个）
+[diag] batch    0  已处理    16 张   2.89 张/秒  已用    5.5s
+[diag] batch    5  已处理    96 张   2.43 张/秒  已用   39.5s
+[diag] batch   10  已处理   176 张   2.43 张/秒  已用   72.5s
+[diag] batch   15  已处理   256 张   2.51 张/秒  已用  102.1s
+[diag] batch   20  已处理   336 张   2.58 张/秒  已用  130.3s
+[diag] batch   25  已处理   416 张   2.63 张/秒  已用  158.4s
+[diag] batch   30  已处理   496 张   2.65 张/秒  已用  186.9s
+[diag] batch   35  已处理   576 张   2.67 张/秒  已用  215.5s
+[diag] batch   40  已处理   656 张   2.68 张/秒  已用  244.6s
+[diag] batch   45  已处理   736 张   2.61 张/秒  已用  282.1s
+[diag] batch   50  已处理   816 张   2.59 张/秒  已用  315.6s
+[diag] batch   55  已处理   896 张   2.54 张/秒  已用  352.2s
+[diag] batch   60  已处理   976 张   2.51 张/秒  已用  389.0s
+[diag] batch   65  已处理  1056 张   2.49 张/秒  已用  424.6s
+[diag] batch   70  已处理  1136 张   2.47 张/秒  已用  459.2s
+[diag] batch   75  已处理  1216 张   2.47 张/秒  已用  492.6s
+[diag] 完成 1263 张，用时 512.1s (2.47 张/秒)
+
+======================================================================
+# P0-① 定位归因诊断：按 GT 篡改面积分桶
+
+- 权重：`outputs/upload/results_20260928/_pack/vibnet_best.pt`
+- 数据：`CASIAv2/test`，共 1263 张（其中含篡改 513 张、真实 750 张）
+- 输入 224×224，判定阈值 0.5，参数量 90.53 M
+- 耗时 512.1s（CPU）
+
+## 一、全量口径复现（用于确认与云端评测同口径）
+
+| 口径 | 数值 |
+|---|---|
+| ★ 逐图（仅含篡改图，文献标准）`miou_tampered_only` | **0.2668** |
+| 池化 `miou` | 0.4570 |
+| 全部非空图 `miou_per_sample` | 0.2525 |
+| Pixel Acc | 0.9748 |
+| Dice | 0.6273 |
+| n_tampered | 513 |
+
+分类（同批样本）：ACC 0.9382 / F1 0.9259 / AUC 0.9847 / Precision 0.9035 / Recall 0.9493
+
+> 云端 `eval_casia.json` 的对应值为 `miou_tampered_only = 0.2668`、池化 0.4570、逐图 0.2525。本表与之一致才能继续往下看分桶结论。
+
+## 二、★ 按 GT 篡改面积分桶
+
+| 面积桶 | n | 逐图 IoU 均值 ★ | 池化 IoU | 像素召回 | 像素精度 | 预测面积/GT 面积 | IoU≥0.1 占比 |
+|---|---|---|---|---|---|---|---|
+| ≤0.5%（极小） | 65 | **0.0461** | 0.0337 | 0.1309 | 0.0955 | 3.32 | 0.138 |
+| 0.5%~2%（小） | 145 | **0.1436** | 0.1218 | 0.2432 | 0.2725 | 1.51 | 0.338 |
+| 2%~5%（中小） | 106 | **0.1681** | 0.1546 | 0.2551 | 0.3221 | 1.03 | 0.406 |
+| 5%~10%（中） | 82 | **0.3592** | 0.3592 | 0.4961 | 0.5619 | 0.95 | 0.720 |
+| 10%~25%（大） | 63 | **0.5034** | 0.4686 | 0.6118 | 0.6974 | 0.92 | 0.810 |
+| >25%（极大） | 52 | **0.6550** | 0.6230 | 0.7345 | 0.8452 | 0.89 | 0.885 |
+
+> 「预测面积/GT 面积」= 平均(预测为正的像素比例 ÷ GT 篡改比例)。远小于 1 = 系统性**欠分割**（该检的没检出来）；远大于 1 = 过分割/误报。
+
+## 三、归因判定（自动给出）
+
+| 现象 | 实测 |
+|---|---|
+| 小面积桶（≤2%）逐图 IoU | 0.1134 （n=210） |
+| 大面积桶（>10%）逐图 IoU | 0.5720 （n=115） |
+| 全体逐图 IoU | 0.2668 |
+| 池化 IoU | 0.4570 |
+
+**→ 归因：小目标被压掉。** 大面积桶正常而小面积桶塌陷。
+对策优先级：① 输入分辨率 224→320（小区域像素数 ×2，代价单轮 ≈2.2×）；② 定位头输出层上采样到更高分辨率；③ 边缘损失权重上调。
+
+**⚠ 口径差距显著**：池化 0.4570 比逐图 0.2668 高 0.190 —— 说明**大区域图在拉高池化值**，论文里必须报 `miou_tampered_only` 并注明，不要挑池化值。
+
+## 四、真实图误报（定位支路的假阳性）
+
+- 真实图 750 张，其中 2.9% 的图预测出了超过 0.5% 面积的"篡改区域"
+- 平均预测面积占比 0.0011
+
+> 真实图上定位支路本应输出全零。误报率高会同时拖累`miou_per_sample` 与人工复核体验。
+
+---
+
+*由 `scripts/diag_area_buckets.py` 生成 · 2026-09-29 11:24:34*
+======================================================================
+[diag] 报告已写入 outputs/diag\diag_area_buckets.md
+[diag] 明细已写入 outputs/diag\diag_area_buckets.json

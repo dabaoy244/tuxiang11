@@ -84,6 +84,47 @@ class LocalTextureNet(nn.Module):
 # --------------------------------------------------------------------------
 # CLIP-ViT-B/16 骨干
 # --------------------------------------------------------------------------
+class _CLIPVisionV4Layout(nn.Module):
+    """把 transformers>=5 的 `CLIPVisionModel` 包一层，使其 **state_dict 键名**
+    与 transformers 4.x 完全一致（多一层 `vision_model.` 前缀）。
+
+    为什么需要（2026-09-29 本机实测踩到）
+    ------------------------------------
+    transformers 5.x 去掉了 `CLIPVisionModel -> vision_model(CLIPVisionTransformer)`
+    这层嵌套，视觉塔直接挂在根上，键名从
+        vision_model.embeddings.class_embedding
+    变成
+        embeddings.class_embedding
+    权重本身**完全没变**，只是命名少了一层。而本项目云端训练产出的 checkpoint
+    是 4.x 布局的，于是在 transformers 5.x 的机器上加载时：
+
+        load_state_dict(..., strict=False)  → missing 150 / unexpected 199
+
+    整个空域骨干（85.8M 参数）**保持随机初始化且不报错**，
+    ACC 恒为 0.5、三种 mIoU 全为 0 —— 看起来像"模型没训好"，其实是键名没对上。
+    这里补一层包装即可两边通用，无需降级 transformers。
+
+    注意：只补 `vision_model` 这一层，forward 语义不变（v4 的 CLIPVisionTransformer
+    与 v5 的 CLIPVisionModel 都返回 `last_hidden_state`）。
+    """
+
+    def __init__(self, model: nn.Module):
+        super().__init__()
+        self.vision_model = model
+
+    def forward(self, pixel_values: torch.Tensor = None, **kw):  # type: ignore[assignment]
+        return self.vision_model(pixel_values=pixel_values, **kw)
+
+
+def _as_v4_layout(model: nn.Module) -> nn.Module:
+    """transformers 4.x 布局原样返回；5.x 布局补一层 `vision_model.` 包装。"""
+    if hasattr(model, "vision_model"):
+        return model
+    print("[CLIPViTBackbone] 检测到 transformers>=5 的扁平布局，"
+          "已补 `vision_model.` 包装以对齐 4.x 的键名（权重内容无差异）。")
+    return _CLIPVisionV4Layout(model)
+
+
 class CLIPViTBackbone(nn.Module):
     """CLIP-ViT-B/16：冻结前 6 层，仅微调后 6 层（申报书 1.1(1)）。
 
@@ -183,7 +224,10 @@ class CLIPViTBackbone(nn.Module):
 
         for ckpt, local_only in attempts:
             try:
-                return CLIPVisionModel.from_pretrained(ckpt, local_files_only=local_only)
+                # 统一成 transformers 4.x 的键名布局，否则 transformers 5.x 下
+                # 加载本项目 checkpoint 会静默错配（见 _CLIPVisionV4Layout 说明）
+                return _as_v4_layout(
+                    CLIPVisionModel.from_pretrained(ckpt, local_files_only=local_only))
             except Exception as e:  # noqa: BLE001
                 print(f"[CLIPViTBackbone] 加载 {ckpt} (local_only={local_only}) 失败："
                       f"{type(e).__name__}")

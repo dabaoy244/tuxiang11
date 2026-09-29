@@ -1,0 +1,31 @@
+{
+  "env": {
+    "platform": "Windows-10-10.0.19045-SP0",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "cpu_count": 7,
+    "onnxruntime": "1.30.0",
+    "torch": "2.14.0+cpu"
+  },
+  "image_size": 224,
+  "reps": 5,
+  "runs_per_rep": 20,
+  "rows": [
+    {
+      "model": "lite_simplified.onnx",
+      "size_MB": 98.7,
+      "intra_op_threads": 3,
+      "reps_ms": [
+        95.0,
+        91.2,
+        92.4,
+        92.9,
+        93.1
+      ],
+      "median_ms": 92.9,
+      "median_fps": 10.77,
+      "best_fps": 10.97,
+      "worst_fps": 10.52,
+      "meets_cpu_8fps": true
+    }
+  ]
+}

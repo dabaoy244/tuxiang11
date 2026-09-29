@@ -9,7 +9,13 @@
 用法：
     python scripts/benchmark_cpu.py                       # 默认测 deploy/lite*.onnx
     python scripts/benchmark_cpu.py --models deploy/lite_int8.onnx --reps 5
-    python scripts/benchmark_cpu.py --threads 4           # 固定线程数，减少波动
+    python scripts/benchmark_cpu.py --threads 4           # 显式固定线程数
+
+线程数说明（2026-09-29 实测）：
+    不传 `--threads` 时自动取 `min(4, 核数)`。**不要**手动设成机器全部核数：
+    7 核跑满只有 6.77 张/秒且轮间波动 46%，固定 4 线程是 11.73 张/秒、波动 10%。
+    线程超订（intra-op 线程数 > 实际可用核）会让 spin-wait 线程互相抢占。
+    跨机器对比吞吐前，先用 `--threads N` 各测一遍标定 N。
 
 输出：
     outputs/cpu_benchmark.json
@@ -54,7 +60,14 @@ def _torch_ver() -> str:
 
 def bench_onnx(path: str, shape=(1, 3, 224, 224), reps: int = 3, runs: int = 20,
                threads: int = 0, optimize: bool = True) -> dict:
-    """多轮测量，返回中位数与各轮明细。"""
+    """多轮测量，返回中位数与各轮明细。
+
+    ★ `threads=0` 不再等于「让 ORT 用满所有核」—— 那在本机实测是**最差**的一档
+    （7 核跑满 6.77 张/秒、波动 46%；固定 4 线程 11.73 张/秒、波动 10%）。
+    0 表示「按 src/deploy/inference.py 的 ort_num_threads() 自动取」，
+    它同样被部署路径使用，保证基准与线上一致。要复现"全核"旧口径请显式传
+    机器核数，例如 `--threads 7`。
+    """
     import numpy as np
     import onnxruntime as ort
 
@@ -63,8 +76,15 @@ def bench_onnx(path: str, shape=(1, 3, 224, 224), reps: int = 3, runs: int = 20,
         ort.GraphOptimizationLevel.ORT_ENABLE_ALL if optimize
         else ort.GraphOptimizationLevel.ORT_DISABLE_ALL
     )
-    if threads > 0:
-        so.intra_op_num_threads = threads
+    if threads <= 0:
+        try:
+            sys.path.insert(0, os.path.dirname(os.path.dirname(
+                os.path.abspath(__file__))))
+            from src.deploy.inference import ort_num_threads
+            threads = ort_num_threads()
+        except Exception:                                    # noqa: BLE001
+            threads = min(4, os.cpu_count() or 4)
+    so.intra_op_num_threads = threads
 
     sess = ort.InferenceSession(path, so, providers=["CPUExecutionProvider"])
     iname = sess.get_inputs()[0].name
@@ -84,7 +104,7 @@ def bench_onnx(path: str, shape=(1, 3, 224, 224), reps: int = 3, runs: int = 20,
     return {
         "model": os.path.basename(path),
         "size_MB": round(os.path.getsize(path) / 1e6, 1),
-        "intra_op_threads": threads or "default",
+        "intra_op_threads": threads,
         "reps_ms": [round(v * 1000, 1) for v in per_rep],
         "median_ms": round(med * 1000, 1),
         "median_fps": round(1.0 / med, 2),
