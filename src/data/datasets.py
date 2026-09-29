@@ -88,8 +88,20 @@ _TAMPER_PREFIXES = ("tp_", "t_n_", "t_")
 
 
 def _looks_tampered(filename: str) -> bool:
-    """按 CASIA 命名规范判断文件名是否自称"篡改图"。"""
+    """按命名规范判断文件名是否自称"篡改图"。
+
+    · CASIA：`Tp_` / `T_N_` / `t_` 前缀；
+    · COVERAGE 官方：`<i>t.tif`（如 `37t.tif`）—— 主干为「纯数字 + 结尾 t」。
+
+    ⚠ 第二类曾经缺席：COVERAGE 的官方命名不匹配任何 CASIA 前缀，于是
+    `TamperDataset` 里"篡改图缺掩码 ⇒ 报错跳过、绝不静默当真实图"的安全网
+    **对 COVERAGE 完全不生效** —— 一旦掩码缺一个，那张篡改图会被当成真实图
+    （正样本喂成负样本）且没有任何提示。纯字符串判断即可，不必引入 re。
+    """
     low = filename.lower()
+    stem = os.path.splitext(low)[0]
+    if stem.endswith("t") and stem[:-1].isdigit():
+        return True
     return any(low.startswith(p) for p in _TAMPER_PREFIXES)
 
 

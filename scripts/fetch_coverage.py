@@ -57,6 +57,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shutil
 import sys
 import zipfile
@@ -86,6 +87,122 @@ MASK_PREFIXES = ("mask_", "gt_", "mask-", "gt-")
 TAMPER_PREFIXES = ("tp_", "t_n_", "t_", "forged_", "fake_", "tamper_")
 #: 真实图常见前缀
 GENUINE_PREFIXES = ("ori_", "au_", "orig_", "original_", "real_", "genuine_")
+
+
+# ==========================================================================
+#  官方 COVERAGE 解压包的**原生布局**（与 `_strip_mask_affixes` 的通用后缀法不兼容）
+# --------------------------------------------------------------------------
+#  官方 readme 写得很明确（实测与 readme 逐条一致，2026-09-30）：
+#      image/{i}.tif         原图（真实）
+#      image/{i}t.tif        篡改图
+#      mask/{i}copy.tif      被复制区域
+#      mask/{i}paste.tif     SGO（相似但真实）区域
+#      mask/{i}forged.tif    篡改区域   ← 定位任务要的是这一个
+#  i 取 1..100。三种掩码尺寸彼此一致，但**不一定等于图像尺寸**（见 misaligned 处理）。
+#
+#  ★ 千万别把 "forged"/"copy"/"paste" 加进 MASK_SUFFIXES：
+#    通用路径会把 `1forged` 的主干切成 `1`，于是掩码被配到**原图 `1.tif`** 上；
+#    而 `1(.tif)` 是真实图、本该是负样本，配上非空掩码后就变成"篡改图"——
+#    既污染正类，又让真正的篡改图 `1t.tif` 失去掩码。这是一个**不会报错**的错配。
+#    所以原生布局走下面的专用分支，绝不交给通用模糊配对。
+_COV_IMG_RE = re.compile(r"^(\d+)(t)?$", re.I)              # 1 / 1t
+_COV_MASK_RE = re.compile(r"^(\d+)(forged|copy|paste)$", re.I)
+
+
+def looks_like_native_coverage(src: str) -> bool:
+    """是否为官方解压包布局：`<src>/image/{i,it}.tif` + `<src>/mask/{i}forged.tif`。"""
+    idir, mdir = os.path.join(src, "image"), os.path.join(src, "mask")
+    if not (os.path.isdir(idir) and os.path.isdir(mdir)):
+        return False
+    n_t = sum(1 for p in list_images(idir)
+              if (s := os.path.splitext(os.path.basename(p))[0]).lower().endswith("t")
+              and s[:-1].isdigit())
+    n_f = sum(1 for p in list_images(mdir)
+              if os.path.splitext(os.path.basename(p))[0].lower().endswith("forged"))
+    return n_t > 0 and n_f > 0
+
+
+def _cov_shape(path: str):
+    im = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+    return None if im is None else im.shape
+
+
+def discover_native(src: str, resize_misaligned: bool = False) -> Dict:
+    """原生布局专用配对（只读）。
+
+    与通用路径的区别（每一条都是刻意的）：
+      · 掩码只取 `{i}forged`（复制移动定位的标准 gt），`copy/paste` 仅计数不入库；
+      · `{i}.tif`（原图）**不配掩码** ⇒ 落到"真实图"，由 ingest 补全黑掩码；
+      · `{i}t.tif` 配 `mask/{i}forged.*`；
+      · ★ **尺寸守卫**：掩码与篡改图尺寸不一致时，默认**剔除该篡改图+掩码**
+        （保留其原图作真实样本），因为无法保证像素级对齐 —— 静默 resize 会得到
+        "训练照样跑、mIoU 恒偏低"的假结果。`--resize-misaligned` 可强制最近邻缩放纳入。
+    """
+    idir, mdir = os.path.join(src, "image"), os.path.join(src, "mask")
+    imgs_all, masks_all = list_images(idir), list_images(mdir)
+
+    forged: Dict[str, str] = {}
+    other_masks: List[str] = []
+    for mp in masks_all:
+        stem = os.path.splitext(os.path.basename(mp))[0]
+        m = _COV_MASK_RE.match(stem)
+        if not m:
+            other_masks.append(mp)
+            continue
+        if m.group(2).lower() == "forged":
+            forged.setdefault(m.group(1), mp)
+        else:
+            other_masks.append(mp)          # copy / paste：不是定位 gt，不入库
+
+    pair: Dict[str, str] = {}
+    kept_imgs: List[str] = []
+    misaligned: List[str] = []
+    missing_mask: List[str] = []
+    unknown_names: List[str] = []
+
+    for ip in imgs_all:
+        stem = os.path.splitext(os.path.basename(ip))[0]
+        m = _COV_IMG_RE.match(stem)
+        if not m:
+            unknown_names.append(ip)
+            kept_imgs.append(ip)
+            continue
+        idx, tag = m.group(1), (m.group(2) or "")
+        if not tag:                          # 原图 —— 真实样本，无掩码
+            kept_imgs.append(ip)
+            continue
+
+        mp = forged.get(idx)
+        if mp is None:
+            # 篡改图却没有 forged 掩码 ⇒ 绝不能当真实图喂进去（正样本喂成负样本）
+            missing_mask.append(ip)
+            continue
+
+        si, sm = _cov_shape(ip), _cov_shape(mp)
+        if si is not None and sm is not None and si != sm:
+            misaligned.append(f"{os.path.basename(ip)} {si} vs "
+                              f"{os.path.basename(mp)} {sm}")
+            if not resize_misaligned:
+                continue                     # 默认剔除（连同掩码）
+        kept_imgs.append(ip)
+        pair[ip] = mp
+
+    used_mask = set(pair.values())
+    return {
+        "src": src,
+        "native": True,
+        "images": sorted(kept_imgs),
+        "masks": masks_all,
+        "pair": pair,
+        "unpaired_images": [p for p in sorted(kept_imgs) if p not in pair],
+        "unpaired_masks": [p for p in masks_all if p not in used_mask],
+        "mask_dup": {}, "fuzzy": 0, "ambiguous": [],
+        "misaligned": misaligned,
+        "misaligned_kept": bool(resize_misaligned and misaligned),
+        "missing_mask_tampered": missing_mask,
+        "other_masks": other_masks,
+        "unknown_names": unknown_names,
+    }
 
 
 # ==========================================================================
@@ -160,8 +277,15 @@ def is_mask_like(path: str, src: str) -> bool:
 
 
 # ==========================================================================
-def discover(src: str) -> Dict:
-    """扫描 src，给出图像/掩码清单与配对结果（**只读，不写文件**）。"""
+def discover(src: str, resize_misaligned: bool = False) -> Dict:
+    """扫描 src，给出图像/掩码清单与配对结果（**只读，不写文件**）。
+
+    官方解压包布局走 `discover_native()`；其余（各种第三方打包）走通用后缀法。
+    """
+    if looks_like_native_coverage(src):
+        print("[布局] 识别为官方 COVERAGE 原生布局（image/{i,it} + mask/{i}{forged,copy,paste}）")
+        return discover_native(src, resize_misaligned=resize_misaligned)
+
     files = walk_images(src)
     imgs, masks = [], []
     for p in files:
@@ -272,6 +396,31 @@ def report(d: Dict, expected_real: int, expected_tampered: int) -> Tuple[int, in
         print(f"  [!] 未被用到的掩码 {len(d['unpaired_masks'])} 个，例如：")
         for mp in d["unpaired_masks"][:5]:
             print(f"      {os.path.relpath(mp, d['src'])}")
+
+    # ---- 原生布局专有的三类守卫报告 --------------------------------------
+    if d.get("other_masks"):
+        print(f"  [i] copy/paste 掩码 {len(d['other_masks'])} 个：不作定位 gt，未入库"
+              f"（要的是 `forged`）")
+    if d.get("missing_mask_tampered"):
+        print(f"  [!] 篡改图缺 forged 掩码 {len(d['missing_mask_tampered'])} 个 —— "
+              f"已剔除（**不会**当真实图喂进去）：")
+        for p in d["missing_mask_tampered"][:5]:
+            print(f"      {os.path.basename(p)}")
+    if d.get("misaligned"):
+        act = "已保留（按 --resize-misaligned 做最近邻缩放）" if d.get("misaligned_kept") \
+            else "已剔除该篡改图+掩码（保留其原图作真实样本）"
+        print(f"  [!] 掩码与篡改图**尺寸不一致** {len(d['misaligned'])} 对 —— {act}：")
+        for s in d["misaligned"][:12]:
+            print(f"      {s}")
+        print("      依据（2026-09-30 实测）：同尺寸对照组「掩码 vs 原图-篡改图差分区域」"
+              "IoU 中位数 0.7254；")
+        print("      这 9 对缩放到图像坐标系后中位数仅 0.4861、最低 0.1825 ⇒ 非等比缩放，"
+              "无法保证像素级对齐。")
+    if d.get("unknown_names"):
+        print(f"  [!] 命名不符合 `\\d+` / `\\d+t` 的图像 {len(d['unknown_names'])} 个，"
+              f"已按真实图处理：")
+        for p in d["unknown_names"][:5]:
+            print(f"      {os.path.basename(p)}")
 
     # ---- 关键守卫：一张都没配上 -> 直接失败，不产出一份"全是真实图"的垃圾 ----
     print("-" * 78)
@@ -411,6 +560,9 @@ def main() -> int:
     ap.add_argument("--check", action="store_true", help="只看现状")
     ap.add_argument("--expected-real", type=int, default=100)
     ap.add_argument("--expected-tampered", type=int, default=100)
+    ap.add_argument("--resize-misaligned", action="store_true",
+                    help="掩码与图像尺寸不一致时，强制最近邻缩放到图像坐标系后纳入"
+                         "（默认剔除：无法保证像素级对齐，静默缩放会得到偏低且不可归因的 mIoU）")
     a = ap.parse_args()
 
     if a.check:
@@ -428,7 +580,7 @@ def main() -> int:
     if not os.path.isdir(src):
         raise SystemExit(f"[X] 目录不存在：{src}")
 
-    d = discover(src)
+    d = discover(src, resize_misaligned=a.resize_misaligned)
     n_t, n_r = report(d, a.expected_real, a.expected_tampered)
     if not n_t:
         return 2
