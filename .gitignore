@@ -79,3 +79,5 @@ desktop.ini
 # 它们是可再生的运行产物，体量会持续增长；实体在 outputs/screenshots/ 下。
 # 若要随仓库留档，请显式 `git add -f outputs/screenshots/xxx.png`。
 /outputs/screenshots/
+# 由 scripts/verify_beta_schedule.py 生成，可随时重算
+/outputs/screen/*.txt
