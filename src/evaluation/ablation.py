@@ -120,11 +120,32 @@ def run_ablation(
         }
 
     # ---- 与 full 的差值（消融表的核心列）
-    base = table.get("full", {})
+    #
+    # ★★★ 只有在**同一轮调用**里真的跑了 full，才能算这个差值。
+    #   旧写法是 `base = table.get("full", {})`：本轮没有 full 时 base 退化成 {}，
+    #   于是 `(base...get("acc") or 0) - row_acc` 变成 `0 - 本项 ACC`，
+    #   安静地写出一串形如 -0.65 的差值 —— 看着像「移除该模块掉了 65 个点」，
+    #   其实是拿 0 当基线，没有任何意义，而且**不会报错**。
+    #   本项目消融是**分轮跑**的（每组一次独立调用，避免一组崩掉丢掉前面组的汇总），
+    #   所以每轮都会踩这个坑。差值请用 scripts/merge_ablation.py 汇总多轮后统一算。
+    base = table.get("full")
+    if not base:
+        print("[ablation] [!] 本轮 presets 不含 full ⇒ delta_vs_full 记为 null（不拿 0 当基线）。\n"
+              "            分轮跑消融时，最终差值表请用 scripts/merge_ablation.py 生成。")
     for p, row in table.items():
-        d_acc = (base.get("cls", {}).get("acc") or 0) - (row["cls"].get("acc") or 0)
-        d_miou = (base.get("loc", {}).get("miou") or 0) - (row["loc"].get("miou") or 0)
-        row["delta_vs_full"] = {"acc": round(d_acc, 4), "miou": round(d_miou, 4)}
+        if base:
+            d_acc = (base.get("cls", {}).get("acc") or 0) - (row["cls"].get("acc") or 0)
+            d_miou = (base.get("loc", {}).get("miou") or 0) - (row["loc"].get("miou") or 0)
+            row["delta_vs_full"] = {"acc": round(d_acc, 4), "miou": round(d_miou, 4)}
+        else:
+            row["delta_vs_full"] = {"acc": None, "miou": None}
+
+    def _f4(v) -> str:
+        """指标为空（该口径未测到）时打印 —，而不是让 f-string 抛 TypeError。"""
+        return "—" if v is None else f"{v:.4f}"
+
+    def _p4(v) -> str:
+        return "—" if v is None else f"{v:+.4f}"
 
     out_path = os.path.join(save_dir, "ablation.json")
     with open(out_path, "w", encoding="utf-8") as f:
@@ -134,10 +155,11 @@ def run_ablation(
         f.write("| 消融项 | 说明 | ACC | F1 | AUC | mIoU | Dice | ΔACC | ΔmIoU |\n")
         f.write("|---|---|---|---|---|---|---|---|---|\n")
         for p, r in table.items():
-            c, l = r["cls"], r["loc"]
-            f.write(f"| {p} | {r['config']} | {c.get('acc', 0):.4f} | {c.get('f1', 0):.4f} | "
-                    f"{c.get('auc', 0):.4f} | {l.get('miou', 0):.4f} | {l.get('dice', 0):.4f} | "
-                    f"{r['delta_vs_full']['acc']:+.4f} | {r['delta_vs_full']['miou']:+.4f} |\n")
+            c, loc = r["cls"], r["loc"]
+            dl = r.get("delta_vs_full") or {}
+            f.write(f"| {p} | {r['config']} | {_f4(c.get('acc'))} | {_f4(c.get('f1'))} | "
+                    f"{_f4(c.get('auc'))} | {_f4(loc.get('miou'))} | {_f4(loc.get('dice'))} | "
+                    f"{_p4(dl.get('acc'))} | {_p4(dl.get('miou'))} |\n")
     print(f"\n[ablation] 结果已写入 {out_path}\n           Markdown 表格：{md_path}")
     if mode == "eval":
         print("[ablation] ⚠ 当前为 eval 模式（复用同一 ckpt），结果只能用于流程自检；"
