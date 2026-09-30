@@ -1,6 +1,12 @@
 #!/bin/bash
 # =============================================================================
-# 守夜脚本 v2 —— 适配「消融链路」，避免在组间把机器关掉
+# 守夜脚本 v3 —— 适配「消融链路 + β 对照链路」，避免在组间把机器关掉
+#
+# v3（2026-09-30）：新增第二条链路 `beta_control_chain.sh`（β 生效版受控对照实验）。
+#   它会在主消融链路结束后自动接力，中途还有「等主链路」的长等待期。
+#   若 PAT 只认 ablation_chain.sh，主链路一结束守夜就会判定"全部结束"→ 15 分钟后
+#   关机，把刚接上的 β 实验直接砍掉。故 PAT 改为同时匹配两条链路，
+#   主进程 PAT 也要认得 `src.evaluation.beta_control`（它不叫 ablation）。
 #
 # v1 只看 `src.evaluation.ablation`：链路的组与组之间训练进程会短暂消失
 # （归档、跨生成器评测、预算判断），v1 会把这当成"训练结束"→ 15 分钟后关机，
@@ -24,8 +30,8 @@ INTERVAL=300
 NEED_MISS=3
 STALL_MIN=120          # 主进程活着但主日志这么久没动 -> 卡死
 CHAIN_STALL_MIN=40     # 只有链路在，但所有证据都这么久没动 -> 链路卡死
-PAT_MAIN='src\.evaluation\.ablation'
-PAT_CHAIN='ablation_chain\.sh'
+PAT_MAIN='src\.evaluation\.(ablation|beta_control)'
+PAT_CHAIN='(ablation_chain|beta_control_chain)\.sh'
 
 say(){ echo "[$(date '+%F %T')] $*" >> "$LOG"; }
 
@@ -41,7 +47,8 @@ newest_age(){   # 入参为文件列表；输出"最新的那个文件距今多�
   echo $(( $(date +%s) - newest ))
 }
 
-say "nightwatch v2 启动 PID=$$ 间隔=${INTERVAL}s 主日志卡死=${STALL_MIN}min 链路卡死=${CHAIN_STALL_MIN}min"
+say "nightwatch v3 启动 PID=$$ 间隔=${INTERVAL}s 主日志卡死=${STALL_MIN}min 链路卡死=${CHAIN_STALL_MIN}min"
+say "  活性检测：主进程='$PAT_MAIN'  链路='$PAT_CHAIN'"
 miss=0
 while true; do
   if [ -e "$OFF" ]; then say "检测到 $OFF -> 主动退出，不关机"; exit 0; fi
