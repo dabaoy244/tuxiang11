@@ -81,3 +81,7 @@ desktop.ini
 /outputs/screenshots/
 # 由 scripts/verify_beta_schedule.py 生成，可随时重算
 /outputs/screen/*.txt
+# long-task-monitor 的运行时产物（云端状态快照 / 汇报 / 阶段标记），随采集自动再生：
+#   cloud_status.json|.md、batch_status_report*.md、watch.log、artifacts/<臂>/progress_*.json
+# 生成器入库（scripts/cloud/collect_cloud_status.py、watch_cloud_task.py），产物不入库。
+/outputs/monitor/
