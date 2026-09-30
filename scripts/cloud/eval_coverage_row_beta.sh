@@ -81,9 +81,18 @@ for arm in $DONE_ARMS; do
     continue
   fi
   say "[评测] $tag <- $p"
+  # ★ 必须用本臂自己的配置建模型（β 链路落 configs/_auto_beta_<臂>.yaml）：
+  #   消融臂可能改结构（no_vib: cls_head 输入 256->512），按基础配置建模型会
+  #   load_state_dict size mismatch 崩溃。回退值 = β 组基础配置。
+  cfg="configs/default_crossval_betafull.yaml"
+  if [ -f "$R/configs/_auto_beta_$arm.yaml" ]; then
+    cfg="configs/_auto_beta_$arm.yaml"
+  fi
+  say "[配置] $tag -> $cfg"
   # CUDA_VISIBLE_DEVICES 置空：强制走 CPU，绝不与训练抢显存
   CUDA_VISIBLE_DEVICES="" "$PY" scripts/eval_external_domain.py \
-      --domain COVERAGE --ckpt "$p" --device cpu --cpu-threads 8 \
+      --domain COVERAGE --ckpt "$p" --base-config "$cfg" \
+      --device cpu --cpu-threads 8 \
       --expect 191 --out "$OUTREL" --tag "$tag" >> "$LOG" 2>&1
   rc=$?
   if [ "$rc" -eq 0 ]; then

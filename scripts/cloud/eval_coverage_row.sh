@@ -78,7 +78,9 @@ for fp in sorted(glob.glob(R + "/outputs/ablation/_archive/*/ablation.json")):
 try:
     for line in open("/root/autodl-tmp/chain.status", encoding="utf-8", errors="replace"):
         if line.startswith("done="):
-            for k in line.split("=", 1)[1].split():
+            # ★ chain.status 的 done= 可能是 `done=full,no_vib`（逗号分隔）——
+            #   只按空白切会把 "full,no_vib" 当成一个臂名，导致误报「已归档但找不到权重」。
+            for k in line.split("=", 1)[1].replace(",", " ").split():
                 if k not in ok:
                     ok.append(k)
 except FileNotFoundError:
@@ -118,9 +120,20 @@ for pair in $CANDS; do
     continue
   fi
   say "[评测] $tag <- $ckpt"
+  # ★ 必须用**本臂自己的配置**建模型：消融臂可能改结构而不只是关开关。
+  #   实例：no_vib 的 `in_dim_cls = latent_dim if use_vib else fusion_dim`
+  #   ⇒ cls_head.0 从 (128,256) 变成 (128,512)。若仍按基础配置（use_vib=True）
+  #   建模型，load_state_dict 会 size mismatch 直接崩溃（2026-09-30 16:09 实测）。
+  #   链路已为每臂落好 configs/_auto_<臂>.yaml；没有该文件时（如 formal0928）回退基础配置。
+  cfg="configs/default_crossval.yaml"
+  if [ -f "$R/configs/_auto_$tag.yaml" ]; then
+    cfg="configs/_auto_$tag.yaml"
+  fi
+  say "[配置] $tag -> $cfg"
   # CUDA_VISIBLE_DEVICES 置空：强制走 CPU，绝不与训练抢显存
   CUDA_VISIBLE_DEVICES="" "$PY" scripts/eval_external_domain.py \
-      --domain COVERAGE --ckpt "$ckpt" --device cpu --cpu-threads 8 \
+      --domain COVERAGE --ckpt "$ckpt" --base-config "$cfg" \
+      --device cpu --cpu-threads 8 \
       --expect 191 --out "$OUTREL" --tag "$tag" >> "$LOG" 2>&1
   rc=$?
   if [ "$rc" -eq 0 ]; then

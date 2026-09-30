@@ -1,38 +1,38 @@
 {
   "split": "test",
-  "ckpt": "outputs/upload/results_20260928/_pack/vibnet_best.pt",
+  "ckpt": "/root/autodl-tmp/vibnet-forgery-detector/outputs/ablation/no_vib/ckpt/ablation_no_vib_best.pt",
   "device": "cpu",
   "cls": {
-    "acc": 0.5026178010471204,
-    "precision": 0.4880952380952381,
-    "recall": 0.9010989010989011,
-    "f1": 0.6332046332046332,
-    "auc": 0.5745604395604396,
-    "ap": 0.5402752282361925,
-    "mAP": 0.5402752282361925,
-    "tn": 14,
-    "fp": 86,
-    "fn": 9,
-    "tp": 82,
+    "acc": 0.5340314136125655,
+    "precision": 0.5106382978723404,
+    "recall": 0.5274725274725275,
+    "f1": 0.5189189189189188,
+    "auc": 0.5569780219780219,
+    "ap": 0.5542969270858513,
+    "mAP": 0.5542969270858513,
+    "tn": 54,
+    "fp": 46,
+    "fn": 43,
+    "tp": 48,
     "n": 191
   },
   "loc": {
-    "miou": 0.13330873745471492,
-    "miou_per_sample": 0.08357232792999823,
-    "miou_tampered_only": 0.1597976380199966,
+    "miou": 0.08206140133255471,
+    "miou_per_sample": 0.04676033672256867,
+    "miou_tampered_only": 0.06577278132405263,
     "n_tampered": 91,
-    "pixel_acc": 0.8695953594133988,
-    "dice": 0.23525581873499268,
-    "f1": 0.23525581873499268,
+    "pixel_acc": 0.9247144292926595,
+    "dice": 0.15167605319161445,
+    "f1": 0.15167605319161445,
     "n_pixels": 9583616
   },
   "n_loc_samples": 191,
   "loc_absent_reason": null,
   "perf": {
-    "latency_ms_per_image": 357.6612468749948,
-    "fps": 2.795941715065114,
-    "model_params_M": 90.53154,
-    "model_fp32_MB": 362.12616
+    "latency_ms_per_image": 169.84366472705358,
+    "fps": 5.887767445474314,
+    "model_params_M": 90.564308,
+    "model_fp32_MB": 362.257232
   },
   "targets": {
     "ForenSynths 检测准确率 >= 91%": null,
@@ -41,9 +41,9 @@
     "模型体积 <= 120MB": false
   },
   "miou_conventions": {
-    "miou": 0.13330873745471492,
-    "miou_tampered_only": 0.1597976380199966,
-    "miou_per_sample": 0.08357232792999823,
+    "miou": 0.08206140133255471,
+    "miou_tampered_only": 0.06577278132405263,
+    "miou_per_sample": 0.04676033672256867,
     "n_tampered": 91,
     "判定所用口径": "miou_tampered_only（含篡改区域的图逐图平均，文献标准）",
     "说明": "另外两个口径仅作参考；**不要挑最高的那个报**。"
