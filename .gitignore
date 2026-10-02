@@ -10,6 +10,9 @@ pretrained/
 *.pt
 *.pth
 *.ckpt
+# ⚠ .tgz 不在 *.tar.gz 规则内：outputs/upload/weights_20261002/best_weights.tgz
+#   是 2.5GB 的权重打包（9 臂 best.pt），必须显式挡掉，否则一次 git add 就会撑爆仓库。
+*.tgz
 
 # ---- 部署产物（ONNX / IR / exe）----
 # 同样必须锚定到根目录，否则会匹配 src/deploy/（推理与量化源码）。

@@ -1,0 +1,75 @@
+==========================================================================
+ 跨生成器泛化评测
+==========================================================================
+
+找到 13 个生成器：
+  biggan             真   2000  假   2000
+  crn                真   6382  假   6382
+  cyclegan           真   1321  假   1321
+  deepfake           真   2707  假   2698
+  gaugan             真   5000  假   5000
+  imle               真   6382  假   6382
+  progan             真   4000  假   4000
+  san                真    219  假    219
+  seeingdark         真    180  假    180
+  stargan            真   1999  假   1999
+  stylegan           真   5991  假   5991
+  stylegan2          真   7988  假   7988
+  whichfaceisreal    真   1000  假   1000
+  合计                 真  45169  假  45160
+
+评测计划：3900 张（真 1950 / 假 1950）
+[eval] 载入权重 /root/autodl-tmp/vibnet-forgery-detector/outputs/ablation/no_vib/ckpt/ablation_no_vib_best.pt（epoch=42, stage=stage3_joint_finetune）
+[CLIPViTBackbone] 冻结前 6/12 层，可训练参数 42.53M / 85.80M
+    推理 8/3900  1s 已用 / 预计还需 393s   libpng warning: iCCP: profile 'ICC Profile': 'GRAY': Gray color space not permitted on RGB PNG
+    推理 48/3900  2s 已用 / 预计还需 129s   libpng warning: iCCP: profile 'ICC Profile': 'desc': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'wtpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bkpt': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bXYZ': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmnd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'dmdd': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'vued': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'view': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'lumi': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'meas': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'tech': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'rTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'gTRC': ICC profile tag start not a multiple of 4
+libpng warning: iCCP: profile 'ICC Profile': 'bTRC': ICC profile tag start not a multiple of 4
+    推理 88/3900  2s 已用 / 预计还需 107s       推理 128/3900  3s 已用 / 预计还需 100s       推理 168/3900  4s 已用 / 预计还需 95s       推理 208/3900  5s 已用 / 预计还需 92s       推理 248/3900  6s 已用 / 预计还需 90s       推理 288/3900  7s 已用 / 预计还需 88s       推理 328/3900  8s 已用 / 预计还需 88s       推理 368/3900  9s 已用 / 预计还需 88s       推理 408/3900  10s 已用 / 预计还需 89s       推理 448/3900  12s 已用 / 预计还需 89s       推理 488/3900  13s 已用 / 预计还需 89s       推理 528/3900  14s 已用 / 预计还需 88s       推理 568/3900  15s 已用 / 预计还需 87s       推理 608/3900  16s 已用 / 预计还需 86s       推理 648/3900  17s 已用 / 预计还需 84s       推理 688/3900  18s 已用 / 预计还需 82s       推理 728/3900  18s 已用 / 预计还需 81s       推理 768/3900  19s 已用 / 预计还需 79s       推理 808/3900  20s 已用 / 预计还需 78s       推理 848/3900  21s 已用 / 预计还需 76s       推理 888/3900  22s 已用 / 预计还需 75s       推理 928/3900  23s 已用 / 预计还需 73s       推理 968/3900  24s 已用 / 预计还需 72s       推理 1008/3900  24s 已用 / 预计还需 70s       推理 1048/3900  25s 已用 / 预计还需 69s       推理 1088/3900  26s 已用 / 预计还需 67s       推理 1128/3900  27s 已用 / 预计还需 66s       推理 1168/3900  28s 已用 / 预计还需 65s       推理 1208/3900  28s 已用 / 预计还需 63s       推理 1248/3900  29s 已用 / 预计还需 62s       推理 1288/3900  30s 已用 / 预计还需 61s       推理 1328/3900  31s 已用 / 预计还需 60s       推理 1368/3900  32s 已用 / 预计还需 59s       推理 1408/3900  33s 已用 / 预计还需 58s       推理 1448/3900  34s 已用 / 预计还需 57s       推理 1488/3900  34s 已用 / 预计还需 56s       推理 1528/3900  35s 已用 / 预计还需 55s       推理 1568/3900  37s 已用 / 预计还需 54s       推理 1608/3900  38s 已用 / 预计还需 54s       推理 1648/3900  39s 已用 / 预计还需 53s       推理 1688/3900  40s 已用 / 预计还需 52s       推理 1728/3900  41s 已用 / 预计还需 52s       推理 1768/3900  42s 已用 / 预计还需 51s       推理 1808/3900  43s 已用 / 预计还需 50s       推理 1848/3900  44s 已用 / 预计还需 49s       推理 1888/3900  45s 已用 / 预计还需 48s       推理 1928/3900  46s 已用 / 预计还需 47s       推理 1968/3900  46s 已用 / 预计还需 46s       推理 2008/3900  47s 已用 / 预计还需 44s       推理 2048/3900  48s 已用 / 预计还需 43s       推理 2088/3900  49s 已用 / 预计还需 42s       推理 2128/3900  50s 已用 / 预计还需 42s       推理 2168/3900  52s 已用 / 预计还需 41s       推理 2208/3900  53s 已用 / 预计还需 41s       推理 2248/3900  55s 已用 / 预计还需 40s       推理 2288/3900  56s 已用 / 预计还需 40s       推理 2328/3900  58s 已用 / 预计还需 39s       推理 2368/3900  59s 已用 / 预计还需 38s       推理 2408/3900  66s 已用 / 预计还需 41s       推理 2448/3900  93s 已用 / 预计还需 55s       推理 2488/3900  121s 已用 / 预计还需 68s       推理 2528/3900  150s 已用 / 预计还需 81s       推理 2568/3900  173s 已用 / 预计还需 90s       推理 2608/3900  196s 已用 / 预计还需 97s       推理 2648/3900  214s 已用 / 预计还需 101s       推理 2688/3900  237s 已用 / 预计还需 107s       推理 2728/3900  244s 已用 / 预计还需 105s       推理 2768/3900  244s 已用 / 预计还需 100s       推理 2808/3900  245s 已用 / 预计还需 95s       推理 2848/3900  246s 已用 / 预计还需 91s       推理 2888/3900  247s 已用 / 预计还需 87s       推理 2928/3900  248s 已用 / 预计还需 82s       推理 2968/3900  249s 已用 / 预计还需 78s       推理 3008/3900  250s 已用 / 预计还需 74s       推理 3048/3900  251s 已用 / 预计还需 70s       推理 3088/3900  252s 已用 / 预计还需 66s       推理 3128/3900  253s 已用 / 预计还需 62s       推理 3168/3900  254s 已用 / 预计还需 59s       推理 3208/3900  255s 已用 / 预计还需 55s       推理 3248/3900  256s 已用 / 预计还需 51s       推理 3288/3900  257s 已用 / 预计还需 48s       推理 3328/3900  258s 已用 / 预计还需 44s       推理 3368/3900  259s 已用 / 预计还需 41s       推理 3408/3900  260s 已用 / 预计还需 38s       推理 3448/3900  261s 已用 / 预计还需 34s       推理 3488/3900  262s 已用 / 预计还需 31s       推理 3528/3900  263s 已用 / 预计还需 28s       推理 3568/3900  264s 已用 / 预计还需 25s       推理 3608/3900  265s 已用 / 预计还需 21s       推理 3648/3900  267s 已用 / 预计还需 18s       推理 3688/3900  269s 已用 / 预计还需 15s       推理 3728/3900  272s 已用 / 预计还需 13s       推理 3768/3900  273s 已用 / 预计还需 10s       推理 3808/3900  275s 已用 / 预计还需 7s       推理 3848/3900  278s 已用 / 预计还需 4s       推理 3888/3900  280s 已用 / 预计还需 1s   
+逐样本分数已存盘：/root/autodl-tmp/vibnet-forgery-detector/outputs/cross_gen/no_vib/scores.npz（含文件基名，可用 scripts/report_third_domain.py 校验样本一致性；改指标定义后可用 scripts/recompute_cross_gen.py 免推理重算）
+
+# 跨生成器泛化评测（ablation_no_vib_best.pt）
+
+- 配置：`configs/_auto_no_vib.yaml`　权重：`/root/autodl-tmp/vibnet-forgery-detector/outputs/ablation/no_vib/ckpt/ablation_no_vib_best.pt`
+- 采样：每生成器每类 ≤150 张；真图去重：是；随机种子 3407
+- 推理：3900 张，用时 281 秒，batch=8
+
+| 生成器 | 真/假样本数 | ACC | 真图ACC | 假图ACC | AUC | AP |
+|---|---|---|---|---|---|---|
+| biggan | 150/150 | 0.7800 | 0.5733 | 0.9867 | 0.9563 | 0.9547 |
+| crn | 150/150 | 0.6600 | 0.6800 | 0.6400 | 0.7176 | 0.7532 |
+| cyclegan | 150/150 | 0.5567 | 0.1133 | 1.0000 | 0.8980 | 0.8341 |
+| deepfake | 150/150 | 0.6700 | 0.5467 | 0.7933 | 0.7474 | 0.7115 |
+| gaugan | 150/150 | 0.6433 | 0.2867 | 1.0000 | 0.9427 | 0.9257 |
+| imle | 150/150 | 0.7267 | 0.6533 | 0.8000 | 0.8410 | 0.8544 |
+| progan | 150/150 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
+| san | 150/150 | 0.5400 | 0.7467 | 0.3333 | 0.5681 | 0.5662 |
+| seeingdark | 150/150 | 0.7133 | 0.4600 | 0.9667 | 0.9195 | 0.8997 |
+| stargan | 150/150 | 0.8000 | 0.6000 | 1.0000 | 0.9957 | 0.9918 |
+| stylegan | 150/150 | 0.9967 | 1.0000 | 0.9933 | 1.0000 | 1.0000 |
+| stylegan2 | 150/150 | 0.9067 | 0.9933 | 0.8200 | 0.9323 | 0.9560 |
+| whichfaceisreal | 150/150 | 0.6933 | 0.6333 | 0.7533 | 0.7931 | 0.8012 |
+| **宏平均** | — | **0.7451** | **0.6374** | **0.8528** | **0.8701** | **0.8653** |
+| **微平均（合并全部样本）** | 1950/1950 | **0.7451** | 0.6374 | 0.8528 | 0.8610 | 0.8618 |
+
+> 注：宏平均 = 先算各生成器的指标再取平均（每个生成器权重相同）；微平均 = 把所有样本合在一起算。
+> 两者差异大说明模型在不同生成器上表现严重不均。
+
+> 复现命令：`python scripts/eval_cross_generator.py --config configs/_auto_no_vib.yaml --ckpt /root/autodl-tmp/vibnet-forgery-detector/outputs/ablation/no_vib/ckpt/ablation_no_vib_best.pt --per-class 150 --size 224 --device cuda --out /root/autodl-tmp/vibnet-forgery-detector/outputs/cross_gen/no_vib --tag no_vib --scores-out /root/autodl-tmp/vibnet-forgery-detector/outputs/cross_gen/no_vib/scores.npz`
+
+已写出：
+  /root/autodl-tmp/vibnet-forgery-detector/outputs/cross_gen/no_vib/cross_generator_no_vib.md
+  /root/autodl-tmp/vibnet-forgery-detector/outputs/cross_gen/no_vib/cross_generator_no_vib.json

@@ -1,0 +1,52 @@
+{
+  "split": "test",
+  "ckpt": "/root/autodl-tmp/vibnet-forgery-detector/outputs/ablation_betafull/no_vib/ckpt/ablation_no_vib_best.pt",
+  "device": "cpu",
+  "cls": {
+    "acc": 0.5445026178010471,
+    "precision": 0.5208333333333334,
+    "recall": 0.5494505494505495,
+    "f1": 0.5347593582887702,
+    "auc": 0.570054945054945,
+    "ap": 0.5504439759325435,
+    "mAP": 0.5504439759325435,
+    "tn": 54,
+    "fp": 46,
+    "fn": 41,
+    "tp": 50,
+    "n": 191
+  },
+  "loc": {
+    "miou": 0.08013689475630255,
+    "miou_per_sample": 0.0466973109640193,
+    "miou_tampered_only": 0.07594727497444898,
+    "n_tampered": 91,
+    "pixel_acc": 0.9016155280011219,
+    "dice": 0.14838284877655775,
+    "f1": 0.14838284877655775,
+    "n_pixels": 9583616
+  },
+  "n_loc_samples": 191,
+  "loc_absent_reason": null,
+  "perf": {
+    "latency_ms_per_image": 160.24142029345967,
+    "fps": 6.240583727781746,
+    "model_params_M": 90.564308,
+    "model_fp32_MB": 362.257232
+  },
+  "targets": {
+    "ForenSynths 检测准确率 >= 91%": null,
+    "CASIAv2 篡改定位 mIoU >= 56%": false,
+    "CPU 推理 >= 8 张/秒(224x224)": false,
+    "模型体积 <= 120MB": false
+  },
+  "miou_conventions": {
+    "miou": 0.08013689475630255,
+    "miou_tampered_only": 0.07594727497444898,
+    "miou_per_sample": 0.0466973109640193,
+    "n_tampered": 91,
+    "判定所用口径": "miou_tampered_only（含篡改区域的图逐图平均，文献标准）",
+    "说明": "另外两个口径仅作参考；**不要挑最高的那个报**。"
+  },
+  "is_synthetic_demo": false
+}

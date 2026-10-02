@@ -1,0 +1,38 @@
+{
+  "domain": "COVERAGE",
+  "ckpt": "/root/autodl-tmp/vibnet-forgery-detector/outputs/ablation/no_vib/ckpt/ablation_no_vib_best.pt",
+  "device": "cpu",
+  "n_total": 191,
+  "n_real": 100,
+  "n_fake": 91,
+  "n_loc_samples": 191,
+  "n_loc_tampered": 91,
+  "cls": {
+    "acc": 0.5340314136125655,
+    "precision": 0.5106382978723404,
+    "recall": 0.5274725274725275,
+    "f1": 0.5189189189189188,
+    "auc": 0.5569780219780219,
+    "ap": 0.5542969270858513,
+    "mAP": 0.5542969270858513,
+    "tn": 54,
+    "fp": 46,
+    "fn": 43,
+    "tp": 48,
+    "n": 191
+  },
+  "loc": {
+    "miou": 0.08206140133255471,
+    "miou_per_sample": 0.04676033672256867,
+    "miou_tampered_only": 0.06577278132405263,
+    "n_tampered": 91,
+    "pixel_acc": 0.9247144292926595,
+    "dice": 0.15167605319161445,
+    "f1": 0.15167605319161445,
+    "n_pixels": 9583616
+  },
+  "zero_shot": true,
+  "note": "复制-移动（copy-move）篡改，官方 100 对；与训练域（ForenSynths 生成图 / CASIAv2 拼接·复制移动）**不同源**，全程未参与训练 ⇒ 这是**零样本跨数据集**结果。",
+  "loc_pool_warning": "定位池含 100 张全零 GT 的真实图（掩码文件存在但无前景）。只有 miou_tampered_only 跨数据集可比；其余三个含真实图像素，受误报影响，不可与 CASIAv2 的同名指标并列。",
+  "cmd": "python scripts/eval_external_domain.py --domain COVERAGE --ckpt /root/autodl-tmp/vibnet-forgery-detector/outputs/ablation/no_vib/ckpt/ablation_no_vib_best.pt --base-config configs/_auto_no_vib.yaml --device cpu --cpu-threads 8 --expect 191 --out outputs/coverage_ext --tag no_vib"
+}
