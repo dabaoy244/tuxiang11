@@ -32,6 +32,9 @@ TS=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="$ROOT_DIR/outputs/cloud_logs_$(date +%Y%m%d)/sync_backup_$TS"
 TMP=$(mktemp -d 2>/dev/null || echo "/tmp/sync_$$")
 mkdir -p "$TMP"
+# ⚠ Git Bash 的 mktemp 返回 Windows 风格路径（C:\Users\...），反斜杠传给 awk -v / scp 会被吃掉。
+#   统一转成 MSYS 风格（/c/Users/...）——这是本脚本踩过的真坑，别删。
+TMP=$(cd "$TMP" && pwd)
 
 MODE=${1:-check}
 FORCE=${2:-}
@@ -47,36 +50,49 @@ remote_md5 > "$TMP/remote.txt" || { echo "[x] 无法读取云端清单（实例�
 local_md5  > "$TMP/local.txt"
 
 report(){
-  # 输出：SAME / DIFF / ONLY_REMOTE / ONLY_LOCAL 四类，并把 DIFF 写进 $TMP/diff.txt
-  : > "$TMP/diff.txt"
-  awk -v diffout="$TMP/diff.txt" '
+  # 输出四类差异到 stdout，并按类型写入 $TMP/diff.txt（用 shell 重定向，不用 awk -v 传路径）
+  awk '
     FNR==NR { sub(/^\*/,"",$2); r[$2]=$1; next }
             { sub(/^\*/,"",$2); l[$2]=$1 }
     END {
       for (f in l) {
-        if (f in r) { if (l[f]!=r[f]) print "DIFF\t" f >> diffout }
-        else print "ONLY_LOCAL\t" f >> diffout
+        if (f in r) { if (l[f]!=r[f]) printf "DIFF\t%s\n", f }
+        else printf "ONLY_LOCAL\t%s\n", f
       }
-      for (f in r) if (!(f in l)) print "ONLY_REMOTE\t" f >> diffout
+      for (f in r) if (!(f in l)) printf "ONLY_REMOTE\t%s\n", f
     }
-  ' "$TMP/remote.txt" "$TMP/local.txt"
+  ' "$TMP/remote.txt" "$TMP/local.txt" > "$TMP/diff.txt"
+
   echo "== 同名但内容不同（push 会覆盖云端）=="
-  grep '^DIFF' "$TMP/diff.txt" | cut -f2 | sed 's/^/   [!] /' || echo "   （无）"
+  if [ "$(diff_count)" -gt 0 ]; then
+    awk -F'\t' '$1=="DIFF"{print "   [!] "$2}' "$TMP/diff.txt"
+  else
+    echo "   （无）"
+  fi
   echo "== 仅云端有（本地缺失，pull 会补齐）=="
-  grep '^ONLY_REMOTE' "$TMP/diff.txt" | cut -f2 | sed 's/^/   - /' || echo "   （无）"
+  if grep -q '^ONLY_REMOTE' "$TMP/diff.txt" 2>/dev/null; then
+    awk -F'\t' '$1=="ONLY_REMOTE"{print "   - "$2}' "$TMP/diff.txt"
+  else
+    echo "   （无）"
+  fi
   echo "== 仅本地有（云端没有，push 会新增）=="
-  grep '^ONLY_LOCAL' "$TMP/diff.txt" | cut -f2 | sed 's/^/   + /' || echo "   （无）"
-  local n
-  n=$(grep -c '^DIFF' "$TMP/diff.txt" 2>/dev/null || echo 0)
-  echo "== 汇总：同名差异 $n 个 =="
-  return 0
+  if grep -q '^ONLY_LOCAL' "$TMP/diff.txt" 2>/dev/null; then
+    awk -F'\t' '$1=="ONLY_LOCAL"{print "   + "$2}' "$TMP/diff.txt"
+  else
+    echo "   （无）"
+  fi
+  echo "== 汇总：同名差异 $(diff_count) 个 =="
 }
+
+# ⚠ 不要用 `grep -c PATTERN file || echo 0`：无匹配时 grep 输出 "0" 且返回 1，
+#   `||` 会再补一个 0 ⇒ 得到 "0\n0"，`[ -gt ]` 直接报 integer expected。用 awk 计数。
+diff_count(){ awk '$1=="DIFF"{c++} END{print c+0}' "$TMP/diff.txt" 2>/dev/null; }
 
 case "$MODE" in
   check)
     echo "== 比对 $HOST:$REMOTE/*.sh 与 $LOCAL_DIR/*.sh =="
     report
-    [ "$(grep -c '^DIFF' "$TMP/diff.txt" 2>/dev/null || echo 0)" -gt 0 ] && exit 2
+    [ "$(diff_count)" -gt 0 ] && exit 2
     exit 0
     ;;
   pull)
@@ -108,7 +124,7 @@ case "$MODE" in
   push)
     echo "== push：本地 → 云端 =="
     report
-    if [ "$(grep -c '^DIFF' "$TMP/diff.txt" 2>/dev/null || echo 0)" -gt 0 ] && [ "$FORCE" != "--force" ]; then
+    if [ "$(diff_count)" -gt 0 ] && [ "$FORCE" != "--force" ]; then
       echo ""
       echo "[x] 拒绝上传：存在同名内容差异（上图 [!] 项）。"
       echo "    → 若云端那份才是最新的，先执行 pull；确认要用本地版覆盖再加 --force。"
