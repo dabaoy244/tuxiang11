@@ -70,6 +70,10 @@ model:
   spatial:
     backbone: "tiny_vit"         # 轻量档直接走离线可构造骨干
     backbone_variant: "s16"      # 384 维 / 12 层 → 骨干 21.68M
+    # ★★★ 必填：不写这一行，s16 骨干就是**随机初始化**，在几千张图上根本训不起来
+    #     （实测 5 epoch 后 acc 恒 0.5）。由 scripts/fetch_pretrained_backbone.py
+    #     --variant s16 生成（timm vit_small_patch16_224.augreg_in21k_ft_in1k）。
+    backbone_weights: pretrained/vit_s16_imagenet.pt
     clip_pretrained: "openai/clip-vit-base-patch16"
     clip_local_dir: "pretrained/clip-vit-base-patch16"
     freeze_first_n_layers: 6
@@ -162,7 +166,9 @@ train:
       freeze: []
       train: ["all"]
       use_tasks: ["cls", "loc", "edge"]
-      beta_epoch_offset: 20
+      beta_epoch_offset: 0           # ★ 必须为 0：锚由 model.vib.beta_anchor='vib' 处理。
+                                     #   原值 20 ⇒ stage3 起始锚越过 [20,40) ⇒ 启动即崩
+                                     #   （trainer.py:469 _check_beta_window）。2026-10-05 修正。
       monitor: "val_cls_auc"
 
   optimizer: "adamw"
