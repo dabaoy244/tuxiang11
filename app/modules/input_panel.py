@@ -13,7 +13,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import (
     QAbstractItemView, QFileDialog, QGroupBox, QHBoxLayout, QLabel, QListWidget,
-    QListWidgetItem, QPushButton, QVBoxLayout, QWidget,
+    QListWidgetItem, QMessageBox, QPushButton, QVBoxLayout, QWidget,
 )
 
 from app.modules.workers import ThumbWorker
@@ -39,6 +39,9 @@ class ThumbListWidget(QListWidget):
         self.setAcceptDrops(True)
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setIconSize(self.iconSize())
+        #: 由 `InputPanel` 注入的"规模前置确认"钩子：收到"这个文件夹里有 N 张"，
+        #: 返回是否继续载入。见 `InputPanel._confirm_large`。
+        self.front_check = None
 
     def dragEnterEvent(self, e):
         if e.mimeData().hasUrls():
@@ -57,7 +60,11 @@ class ThumbListWidget(QListWidget):
         for url in e.mimeData().urls():
             p = url.toLocalFile()
             if os.path.isdir(p):
-                paths += collect_images(p)
+                got = collect_images(p)
+                # 文件夹是"规模失控"的唯一入口（一次能带进 13 万张）⇒ 先问一句
+                if self.front_check is not None and not self.front_check(len(got)):
+                    continue
+                paths += got
             elif p.lower().endswith(SUPPORTED_EXT):
                 paths.append(p)
         if paths:
@@ -123,22 +130,59 @@ class InputPanel(QGroupBox):
         self.btn_batch.clicked.connect(self.pick_batch)
         self.btn_folder.clicked.connect(self.pick_folder)
         self.btn_clear.clicked.connect(self.clear)
-        self.list.files_dropped.connect(self.add_paths)
+        self.list.files_dropped.connect(self._add_with_confirm)
+        self.list.front_check = self._confirm_large
         self.list.itemSelectionChanged.connect(self._on_selection)
 
     # ------------------------------------------------------------------
     def pick_single(self) -> None:
         paths, _ = QFileDialog.getOpenFileNames(self, "选择图像", "", FILTER)
-        self.add_paths(paths)
+        self._add_with_confirm(paths)
 
     def pick_batch(self) -> None:
         paths, _ = QFileDialog.getOpenFileNames(self, "批量选择图像", "", FILTER)
-        self.add_paths(paths)
+        self._add_with_confirm(paths)
 
     def pick_folder(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "选择图像文件夹")
         if folder:
-            self.add_paths(collect_images(folder))
+            self._add_with_confirm(collect_images(folder))
+
+    # ------------------------------------------------------------------
+    def _confirm_large(self, n: int) -> bool:
+        """规模**前置**确认：超过单次上限就先问一句，返回是否继续。
+
+        为什么要它：上限（`MAX_LIST_ITEMS`）只是"截断"，用户事先并不知道
+        自己选中的是一个 **13 万张**的根目录 —— 载入后在计数栏才会看到。
+        这里在**载入之前**把规模摊开，让人自己决定要不要继续。
+        默认按钮是「否」，避免手快误点把 2000 张灌进来。
+        """
+        if n <= MAX_LIST_ITEMS:
+            return True
+        btn = QMessageBox.question(
+            self, "图像数量超过单次上限",
+            f"选中的范围里共 {n} 张图像，已超过单次载入上限 {MAX_LIST_ITEMS} 张。\n\n"
+            f"继续的话只会载入前 {MAX_LIST_ITEMS} 张（其余需分批处理）；\n"
+            f"批量检测这 {MAX_LIST_ITEMS} 张在本机 CPU 上约需 3 分钟。\n\n"
+            f"是否继续？",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if btn != QMessageBox.Yes:
+            self._requested = n
+            self._hit_cap = True
+            self.lbl_count.setText(
+                f"已取消载入：选中 {n} 张，超过单次上限 {MAX_LIST_ITEMS} 张")
+            self.lbl_count.setStyleSheet("color:#e67e22;")
+            return False
+        return True
+
+    def _add_with_confirm(self, paths: List[str]) -> None:
+        """**交互入口专用**：先做规模确认，再交给 `add_paths`。
+
+        ⚠ 刻意不在 `add_paths` 里做确认 —— 脚本/验收会直接调 `add_paths`，
+        模态框会把调用方（含自动化）卡在嵌套事件循环里。
+        """
+        if self._confirm_large(len(paths)):
+            self.add_paths(paths)
 
     def add_paths(self, paths: List[str]) -> None:
         """把路径加入列表。**不再在 UI 线程里解码缩略图**（A1 修复）。
