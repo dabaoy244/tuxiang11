@@ -153,7 +153,12 @@ class Detector:
         #   一致性已验：与 .pt 同抽样对比 mask_logits max|Δ| 5.5e-4、prob_fake 5.3e-5。
         #   ⚠ 不要用 deploy/lite*.onnx —— 那是 `--ckpt ""` 导出的随机初始化件。
         onnx_path: str = "deploy/b16_g43.onnx",
-        openvino_ir: str = "deploy/vibnet_ir/vibnet.xml",
+        # ★★★ 2026-10-09（T0-3）：与上面的 onnx_path 同步换成 g43 的 IR。
+        #   旧件 `deploy/vibnet_ir/vibnet.xml` 是 **0928** 的，保留留档；
+        #   若这里不改，OpenVINO 后端会静默跑另一个权重。
+        #   生成命令：`python -m src.deploy.optimize_openvino \
+        #     --onnx deploy/b16_g43.onnx --out deploy/vibnet_ir_g43`（本地 CPU，37 s，¥0）
+        openvino_ir: str = "deploy/vibnet_ir_g43/b16_g43.xml",
         config_path: str = "configs/default.yaml",
         device: str = "cpu",
         num_threads: int = 0,

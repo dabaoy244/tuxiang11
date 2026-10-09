@@ -48,7 +48,12 @@ class SettingsPanel(QGroupBox):
         #   一致性：与 .pt 同抽样对比，mask_logits max|Δ| 5.5e-4（float32 舍入量级），
         #   prob_fake max|Δ| 5.3e-5 ⇒ 导出件确实是同一套权重。
         "onnx": "deploy/b16_g43.onnx",
-        "openvino": "deploy/vibnet_ir/vibnet.xml",
+        # ★★★ 2026-10-09（T0-3）：OpenVINO IR 同步换成 g43 的导出版。
+        #   病根：换默认 ONNX 之后，这里若仍指向 `deploy/vibnet_ir/vibnet.xml`，
+        #   则 **ONNX 后端跑 g43、OpenVINO 后端跑 0928** —— 两个后端两个模型，
+        #   正是本项目最忌讳的那种不一致。
+        #   旧件（0928 的 IR）保留在 `deploy/vibnet_ir/` 作留档，不删。
+        "openvino": "deploy/vibnet_ir_g43/b16_g43.xml",
         "config": "configs/default.yaml",
         "image_size": 224,
         "auto_load": True,
@@ -93,6 +98,23 @@ class SettingsPanel(QGroupBox):
         "`biggan/cyclegan/stargan`（留作 val_cross）之后的 9 个（n=2700）。"
     )
 
+    #: ★★ 篡改定位（第二个任务）—— **主动交代不利证据**。
+    #: 为什么必须写：本工具**同时**展示"结论 + 篡改热力图"，所以定位变差用户看得见。
+    #: 只报分类 AUC 那个亮点而不提定位，等于藏事。
+    #: 两个数都带标签 ⇒ 不构成"把 0928 的数算到 g43 头上"。
+    #: 来源：`outputs/loc_campaign_20261009/`（本机 CPU 战役，两份 eval_test.json）
+    #:      + `paired_ci.json`（配对 bootstrap，n=513，boot=2000，seed=3407）。
+    MODEL_CARD_LOC = [
+        ("CASIAv2 test 逐图平均 mIoU（仅篡改图，★判定口径）", "0.2469", "本权重；n=513"),
+        ("　对照：出厂件 0928 同口径、同战役", "0.2668", "差 **−1.99pp**"),
+    ]
+    MODEL_CARD_LOC_NOTE = (
+        "定位的 95% <b>配对</b> CI = [−3.36pp, −0.63pp]（不含 0 ⇒ <b>显著</b>）："
+        "<b>换成本权重后分类更好、定位更差</b> —— 这是有意的取舍，不是笔误。"
+        "两数来自同一次评测战役（同设备、同抽样）⇒ 可直接相减。"
+        "口径 `miou_tampered_only` = 只在含篡改区域的图上逐图算 IoU 再平均。"
+    )
+
     def _md5_of(self, path: str) -> str:
         import hashlib
         h = hashlib.md5()
@@ -124,18 +146,25 @@ class SettingsPanel(QGroupBox):
             "当前 ONNX：<b>{o}</b><br>"
             "权重 md5：{m}</p>"
             "<hr>"
-            "<p style='margin:4px 0 2px;'><b>性能（ForenSynths）</b></p>"
+            "<p style='margin:4px 0 2px;'><b>性能（ForenSynths，分类主口径）</b></p>"
             "<table style='font-size:12px;'>{r}</table>"
             "<p style='margin:6px 0 0;color:#666;font-size:11px;'>{p}</p>"
+            "<p style='margin:8px 0 2px;'><b>篡改定位（第二个任务）</b></p>"
+            "<table style='font-size:12px;'>{rl}</table>"
+            "<p style='margin:6px 0 0;color:#666;font-size:11px;'>{rn}</p>"
             "<hr>"
             "<p style='margin:4px 0;color:#666;font-size:11px;'>"
             "• 以上数字是<b>特定测试集</b>上的指标，<b>不是</b>本工具对任意图片的精度承诺，"
             "也<b>不是</b>司法鉴定依据。<br>"
-            "• 篡改定位指标（CASIAv2 / COVERAGE，`miou_tampered_only` 口径）按臂单独报告，"
-            "见项目材料 —— 本卡只列<b>本权重</b>的分类口径，避免把别的权重的数算到它头上。<br>"
+            "• 本卡只列<b>本权重</b>自己的数；对照行已显式标注是出厂件 0928，未与之混同。<br>"
             "• 结论由模型自动给出，仅供辅助参考。</p>"
         ).format(w=self.MODEL_CARD_WEIGHT, o=self.MODEL_CARD_ONNX,
-                 m=md5_cell, r=rows, p=self.MODEL_CARD_PROTOCOL)
+                 m=md5_cell, r=rows, p=self.MODEL_CARD_PROTOCOL,
+                 rl="".join(
+                     "<tr><td style='padding:2px 10px 2px 0;'>{}</td>"
+                     "<td style='padding:2px 14px 2px 0;'><b>{}</b></td>"
+                     "<td style='color:#777;'>{}</td></tr>".format(*m) for m in self.MODEL_CARD_LOC),
+                 rn=self.MODEL_CARD_LOC_NOTE)
 
     def _show_model_card(self) -> None:
         from PyQt5.QtCore import QTimer
