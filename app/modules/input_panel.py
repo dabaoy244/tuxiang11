@@ -10,14 +10,23 @@ import os
 from typing import List
 
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import (
     QAbstractItemView, QFileDialog, QGroupBox, QHBoxLayout, QLabel, QListWidget,
     QListWidgetItem, QPushButton, QVBoxLayout, QWidget,
 )
 
+from app.modules.workers import ThumbWorker
+
 SUPPORTED_EXT = (".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tif", ".tiff")
 FILTER = "图像文件 (*.jpg *.jpeg *.png *.bmp *.webp *.tif *.tiff)"
+
+#: ★ 2026-10-09（A1）：单次载入的列表上限。
+#: 为什么要上限：选 `data/Datasets` 这种根目录一次能命中 **132,817 张**，
+#: 即使缩略图已挪到后台（见 `ThumbWorker`），逐张解码也要约 **84 分钟**才做完，
+#: 而批量检测本身在 11 张/秒下要 3 小时以上 —— 一次全收没有实际意义。
+#: 到上限会**明确告诉用户**（计数栏写"已载入前 N 张"），不是静默截断。
+MAX_LIST_ITEMS = 2000
 
 
 class ThumbListWidget(QListWidget):
@@ -79,6 +88,12 @@ class InputPanel(QGroupBox):
 
     def __init__(self, parent=None):
         super().__init__("① 图像输入", parent)
+        #: 后台缩略图线程与其"代次号"（见 ThumbWorker 的 gen 说明）
+        self._thumb_worker = None
+        self._thumb_gen = 0
+        #: 上一次 add_paths 的入参张数 / 是否被上限截断（供计数栏明示）
+        self._requested = 0
+        self._hit_cap = False
         self._build()
 
     def _build(self) -> None:
@@ -126,36 +141,103 @@ class InputPanel(QGroupBox):
             self.add_paths(collect_images(folder))
 
     def add_paths(self, paths: List[str]) -> None:
+        """把路径加入列表。**不再在 UI 线程里解码缩略图**（A1 修复）。
+
+        改动点：
+          * 遍历 + 建 item 留在 UI 线程（实测 0.8 s/13 万张，可接受）；
+          * 缩略图交给 `ThumbWorker` 后台解码，逐张回填；
+          * 总数封顶 `MAX_LIST_ITEMS`，截断时在计数栏明示。
+        """
         exist = {self.list.item(i).data(Qt.UserRole) for i in range(self.list.count())}
-        added = 0
+        room = max(0, MAX_LIST_ITEMS - len(exist))
+        accepted: List[str] = []
+        hit_cap = False
         for p in paths:
+            if len(accepted) >= room:
+                hit_cap = len(paths) > len(accepted)   # 还有没看过的 ⇒ 确实是上限截的
+                break
             if p in exist or not os.path.exists(p):
                 continue
+            accepted.append(p)
+            exist.add(p)                      # 同批内的重复只收一次
+        self._requested = len(paths)
+        self._hit_cap = hit_cap
+
+        first_row = self.list.count()
+        for p in accepted:
             item = QListWidgetItem(os.path.basename(p))
             item.setData(Qt.UserRole, p)
             item.setToolTip(p)
-            item.setIcon(self._thumb(p))
-            self.list.addItem(item)
-            added += 1
-        if added:
-            self._refresh_count()
+            self.list.addItem(item)           # ★ 先不带图标，避免 UI 线程解码
+        self._refresh_count()
+        if accepted:
+            self._start_thumbs([(first_row + i, p) for i, p in enumerate(accepted)])
+
+    # ------------------------------------------------------------------
+    def _start_thumbs(self, jobs) -> None:
+        """起一个新的缩略图 worker；旧的那条只请求中断（不 wait，避免卡 UI）。"""
+        self._thumb_gen += 1
+        old = self._thumb_worker
+        if old is not None and old.isRunning():
+            old.requestInterruption()
+        self._thumb_worker = ThumbWorker(self._thumb_gen, jobs, self)
+        self._thumb_worker.one_ready.connect(self._on_thumb)
+        self._thumb_worker.start()
+
+    def _on_thumb(self, gen: int, row: int, qimg) -> None:
+        """在主线程把 QImage 转成图标并回填（QPixmap 只能在这里建）。"""
+        if gen != self._thumb_gen:
+            return                            # 旧代次的信号，行号已失效
+        item = self.list.item(row)
+        if item is None:
+            return
+        item.setIcon(QIcon(QPixmap.fromImage(qimg)))
 
     @staticmethod
     def _thumb(path: str):
-        from PyQt5.QtGui import QIcon
-
+        """同步取缩略图（保留兼容；列表已改用 `ThumbWorker` 异步解码）。"""
         pm = QPixmap(path)
         if pm.isNull():
             return QIcon()
         return QIcon(pm.scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
     def clear(self) -> None:
+        if self._thumb_worker is not None and self._thumb_worker.isRunning():
+            self._thumb_worker.requestInterruption()
+        self._thumb_gen += 1                  # 让在途信号全部失效
+        self._requested = 0
+        self._hit_cap = False
         self.list.clear()
         self._refresh_count()
 
+    def shutdown(self) -> None:
+        """关窗前必须调用：停掉缩略图线程并等它退出。
+
+        ★ 为什么必须：**销毁一个仍在运行的 QThread 会让 Qt 直接 fail-fast**
+        （本机实测退出码 `0xC0000409`，stderr 报
+        `QThread: Destroyed while thread is still running`）。
+        选完大文件夹立刻关窗口就会命中 —— 2000 张缩略图要后台跑约 76 秒。
+        单张解码约 38 ms，所以请求中断后几十毫秒内就会退出，3 s 超时足够宽裕。
+        本方法可重复调用。
+        """
+        w = self._thumb_worker
+        self._thumb_gen += 1                  # 先让在途信号失效，避免回填到已清空的列表
+        if w is not None and w.isRunning():
+            w.requestInterruption()
+            w.wait(3000)
+        self._thumb_worker = None
+
     def _refresh_count(self) -> None:
         n = self.list.count()
-        self.lbl_count.setText(f"共 {n} 张待检测图像")
+        txt = f"共 {n} 张待检测图像"
+        if getattr(self, "_hit_cap", False):
+            txt = (f"共 {n} 张待检测图像（已达单次上限 {MAX_LIST_ITEMS}；"
+                   f"本次选中 {getattr(self, '_requested', n)} 张，仅载入前 {n} 张 —— "
+                   f"可分批检测）")
+            self.lbl_count.setStyleSheet("color:#e67e22;")
+        else:
+            self.lbl_count.setStyleSheet("color:#666;")
+        self.lbl_count.setText(txt)
         self.selection_changed.emit(n)
 
     def _on_selection(self) -> None:

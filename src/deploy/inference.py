@@ -23,6 +23,39 @@ from ..data.transforms import IMAGENET_MEAN, IMAGENET_STD
 HEATMAP = None  # 运行时惰性导入 cv2
 
 
+def imread_unicode(path: str, flags: int = 1):
+    """读图，兼容 Windows 中文 / 非 ASCII 路径。
+
+    ★ 为什么先判 ASCII：`cv2.imread` 在 Windows 上碰到非 ASCII 路径时会
+    **返回 None，并往 stderr 打一行**
+    `[WARN] loadsave.cpp: findDecoder imread_('...'): can't open/read file`。
+    我们随后确实会回退到 `np.fromfile + imdecode`（结果是对的），但那行警告会把
+    用户日志弄脏——桌面工具拿它读中文路径时**每次都会刷**（实测 e2e 里一次三行）。
+    所以：ASCII 路径直接走 imread（最快），非 ASCII 直接 imdecode（零警告）。
+
+    读失败 / 路径不存在一律返回 None，**不抛异常**，由调用方按各自契约处理。
+    """
+    import cv2
+
+    ascii_safe = True
+    try:
+        path.encode("ascii")
+    except (UnicodeEncodeError, AttributeError):
+        ascii_safe = False
+
+    if ascii_safe:
+        img = cv2.imread(path, flags)
+        if img is not None:
+            return img
+    try:
+        buf = np.fromfile(path, dtype=np.uint8)
+    except (OSError, ValueError):
+        return None
+    if buf is None or getattr(buf, "size", 0) == 0:
+        return None
+    return cv2.imdecode(buf, flags)
+
+
 @dataclass
 class DetectionResult:
     path: str
@@ -107,8 +140,19 @@ class Detector:
         backend: str = "torch",
         image_size: int = 224,
         threshold: float = 0.5,
-        ckpt: str = "checkpoints/vibnet_best.pt",
-        onnx_path: str = "deploy/vibnet_simplified.onnx",
+        # ★★★ 2026-10-09（D 组 ③）：默认权重 = 审计认定的交付臂 g43
+        #   （`improved_noaug_best.pt`, md5 `e1e5a7e9…`；strict-9 宏平均 AUC
+        #   0.8671 vs 出厂 0928 的 0.8434 ⇒ +2.37pp★，同战役配对 CI 不含 0）。
+        #   ⚠ 不要用同名的 `checkpoints/vibnet_best.pt`（09-26 旧权重，
+        #   p_fake 恒在 0.54 附近、对真图/篡改图无区分）—— 认 md5，不认文件名。
+        ckpt: str = "outputs/upload/weights_improved_20261005/improved_noaug_best.pt",
+        # ★★★ 与 `app/modules/settings_panel.py` 的 `DEFAULTS["onnx"]` **必须一致**
+        #   —— 两处都改才算"换了默认模型"。本件由上面那份 g43 导出：
+        #   `python -m src.deploy.export_onnx --ckpt <g43 .pt> --out deploy/b16_g43.onnx
+        #    --opset 17 --config configs/improved_noaug.yaml`（纯 CPU trace，¥0，363.4 MB）。
+        #   一致性已验：与 .pt 同抽样对比 mask_logits max|Δ| 5.5e-4、prob_fake 5.3e-5。
+        #   ⚠ 不要用 deploy/lite*.onnx —— 那是 `--ckpt ""` 导出的随机初始化件。
+        onnx_path: str = "deploy/b16_g43.onnx",
         openvino_ir: str = "deploy/vibnet_ir/vibnet.xml",
         config_path: str = "configs/default.yaml",
         device: str = "cpu",
@@ -153,6 +197,20 @@ class Detector:
         else:
             self._fallback_note = f"未找到权重 {ckpt}，当前使用随机初始化模型（仅用于界面联调）"
         model.eval()
+        # ★ 2026-10-09（③）：把 DFT 实现切到 matmul，与导出的 ONNX 件保持一致。
+        #   病根：`freq_branch.py:117` 的 `DFT2D(..., mode=f.get("dft_mode","torch"))`
+        #   默认走 `torch.fft`，而 `export_onnx.py:79` 在导出前会 `set_dft_mode("matmul")`
+        #   （ONNX 不支持 aten::fft_fft2）。两种实现数学等价但**数值有差**，
+        #   实测在本机同一批样本上：mask_logits max|Δ| 达 1.6e-2（换 g43 后）、
+        #   出厂件 0928 也有 4.1e-3 ⇒ 是**后端间既有差异**，不是某次导出走样。
+        #   切到 matmul 后 torch 通路与 ONNX 件走同一个算子，残差降到 float32 量级。
+        #   代价：matmul DFT 比 fft 慢；但 torch 后端只是调试通路（默认是 onnx），
+        #   而"两条通路给出同一个数"比这点速度重要 —— 否则 demo 看到的掩码
+        #   与 ONNX 件并不是同一套数值。
+        #   ⚠ 作用范围仅限**部署/演示通路**：评测链路（`src/evaluation/`）直接
+        #     `build_model`，不经过这里 ⇒ 已归档的审计数字（AUC 0.8671 等）不受影响、
+        #     也不需要重跑。
+        model.set_dft_mode("matmul")
         self._torch_model = model
         self._torch = torch
         self._device = torch.device(device if torch.cuda.is_available() else "cpu")
@@ -208,8 +266,17 @@ class Detector:
         return rgb.transpose(2, 0, 1)[None].astype(np.float32)
 
     # ------------------------------------------------------------------
-    def infer(self, x: np.ndarray):
-        """返回 (cls_prob_fake, mask_prob (S,S))。"""
+    def _forward_raw(self, x: np.ndarray):
+        """跑一次前向，返回**未过激活**的 (cls_logits (2,), mask_logits (S,S))。
+
+        ★ 存在的意义：三个后端的原始输出语义必须统一。
+        torch 分支拿到的是 `cls_logits` / `mask_logits`；onnx / openvino 拿到的
+        `out[0]` / `out[1]` 也是 logits。以前 `infer()` 只在 torch 分支做了
+        sigmoid，onnx 分支直接把 logits 当概率返回，**违反了
+        `DetectionResult.mask` 声明的「(H,W) float32 [0,1] 篡改概率」契约**，
+        后果是 onnx 后端的热力图全冷（logits 均值 −22.8 被 clip 成 0）、
+        「高置信度区域占比」统计的是 logits>0.5 而不是概率>0.5。
+        """
         if self.backend == "onnx":
             out = self._ort.run(None, {self._ort.get_inputs()[0].name: x})
         elif self.backend == "openvino":
@@ -219,24 +286,94 @@ class Detector:
             with self._torch.no_grad():
                 t = self._torch.from_numpy(x).to(self._device)
                 o = self._torch_model(t, sample_vib=False, beta=0.0)
-                cls = self._torch.softmax(o["cls_logits"], dim=-1)[0, 1].item()
-                mask = o["mask_prob"][0, 0].cpu().numpy()
-                return float(cls), mask
+                return (o["cls_logits"][0].cpu().numpy().astype(np.float32),
+                        o["mask_logits"][0, 0].cpu().numpy().astype(np.float32))
 
-        cls_logits = np.asarray(out[0])[0]
+        cls_logits = np.asarray(out[0])[0].astype(np.float32)
+        mask_logits = np.asarray(out[1])[0, 0].astype(np.float32)
+        return cls_logits, mask_logits
+
+    # ------------------------------------------------------------------
+    def infer(self, x: np.ndarray):
+        """返回 (cls_prob_fake, mask_prob (S,S))，**两者都在 [0,1]**。"""
+        cls_logits, mask_logits = self._forward_raw(x)
         e = np.exp(cls_logits - cls_logits.max())
         cls_prob = float((e / e.sum())[1])
-        mask = np.asarray(out[1])[0, 0]
-        return cls_prob, mask.astype(np.float32)
+        return cls_prob, (1.0 / (1.0 + np.exp(-mask_logits))).astype(np.float32)
+
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _self_check_probes(size: int):
+        """构造一对"应该引发不同反应"的探针，供 self_check 使用。
+
+        base = 低频结构图（模拟自然图像）
+        x1   = base
+        x2   = base 的中央 80×80 换成强噪声（模拟局部篡改）
+        可用的检测器应当对 x2 产生明显不同的 mask / cls 输出；死模型两者几乎相同。
+        """
+        import cv2
+
+        patch = min(80, size // 2)
+        rng = np.random.default_rng(20261002)
+        gy, gx = np.mgrid[0:size, 0:size].astype("float32") / size
+        gray = 0.5 + 0.20 * np.sin(6 * np.pi * gx) * np.cos(4 * np.pi * gy)
+        gray = gray + cv2.GaussianBlur(rng.normal(0, 0.05, (size, size)).astype("float32"), (0, 0), 8)
+        rgb = np.repeat(gray[None], 3, 0)
+        x1 = ((rgb - 0.5) / 0.25).astype("float32")[None]
+
+        x2 = x1.copy()
+        c, h = size // 2, patch // 2
+        x2[0, :, c - h:c + h, c - h:c + h] = rng.normal(0, 3.0, (3, patch, patch)).astype("float32")
+        return x1, x2
+
+    def self_check(self) -> List[str]:
+        """自检：确认模型对输入**真的有反应**，返回警告列表（空 = 通过）。
+
+        为什么需要：本仓库踩过一次"静默失效"——`deploy/lite*.onnx` 是
+        `export_onnx.py --ckpt ""` 导出的**随机初始化模型**，文件存在、能加载、
+        推理不报错，但对任何图像都恒定输出 p_fake=0.4852。只查"文件是否存在"
+        拦不住，必须喂**一对应当在输出上产生差异**的输入比对原始 logits。
+
+        判据（阈值由 4 个真实样本标定，见 outputs/_ui_test/probe_calib.log）：
+            Δcls  = max|logits2 - logits1|     死模型 0.000 / 坏模型 0.011 / 好模型 0.21
+            Δmask = max|mask_logits2 - mask_logits1|   死模型 0.000
+          * Δcls < 0.05 且 Δmask < 0.05 → 输出与输入无关，判定不可用；
+          * 输出含 NaN/Inf                 → 数值崩溃（零方差输入会触发）。
+
+        成本：2 次前向（onnx 后端本机约 0.2s），只在加载模型时跑一次。
+        """
+        warns: List[str] = []
+        try:
+            x1, x2 = self._self_check_probes(self.image_size)
+            c1, m1 = self._forward_raw(x1)
+            c2, m2 = self._forward_raw(x2)
+        except Exception as e:  # noqa: BLE001
+            return [f"自检无法执行：{type(e).__name__}: {e}"]
+
+        if not (np.isfinite(c1).all() and np.isfinite(c2).all()
+                and np.isfinite(m1).all() and np.isfinite(m2).all()):
+            warns.append("模型输出含 NaN/Inf，数值不稳定（零方差输入会直接崩溃）")
+        else:
+            d_cls = float(np.abs(c2 - c1).max())
+            d_mask = float(np.abs(m2 - m1).max())
+            if d_cls < 0.05 and d_mask < 0.05:
+                warns.append(
+                    f"模型输出与输入**无关**（Δcls={d_cls:.2e}, Δmask={d_mask:.2e}）——"
+                    "该权重疑似随机初始化 / 导出时权重没加载上，检测结果不可用"
+                )
+            elif d_cls < 0.05:
+                warns.append(f"分类输出几乎不随输入变化（Δcls={d_cls:.2e}），结论可信度存疑")
+        return warns
 
     # ------------------------------------------------------------------
     def detect(self, image_path: str) -> DetectionResult:
         import cv2
 
-        img = cv2.imread(image_path, cv2.IMREAD_COLOR)
+        img = imread_unicode(image_path, cv2.IMREAD_COLOR)
         if img is None:
-            img = cv2.imdecode(np.fromfile(image_path, dtype=np.uint8), cv2.IMREAD_COLOR)
-        if img is None:
+            # 契约：统一抛 ValueError（调用方按 ValueError 处理，UI 只显示
+            # "无法读取图像：<路径>"）。缺图时 np.fromfile 抛的 FileNotFoundError
+            # 已在 imread_unicode 内部吞掉，这里不会漏出 Errno 串。
             raise ValueError(f"无法读取图像：{image_path}")
 
         x = self.preprocess(img)

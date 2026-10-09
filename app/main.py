@@ -24,6 +24,37 @@ for p in (ROOT, os.path.join(ROOT, "app")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+# ============================================================================
+# ★ 必须放在任何 PyQt5 import 之前：让 torch 抢在 Qt 前面加载它的 DLL
+# ----------------------------------------------------------------------------
+# 根因（2026-10-02 本机实测，报错只在界面上弹一个 traceback，很容易被误判成
+# "模型路径写错了"）：
+#
+#     import torch                  → OK
+#     import PyQt5 后再 import torch → OSError [WinError 1114] 动态链接库(DLL)
+#                                      初始化例程失败。c10.dll or one of its dependencies
+#     import torch 后再 import PyQt5 → OK
+#
+# 即 **加载顺序敏感**：Qt5Core/Qt5Gui 先把自己的一批 DLL 装进进程后，
+# torch 的 c10.dll 初始化就会失败。而 torch 是**延迟**加载的
+# （workers.py 的 DetectorLoader → src/deploy/inference.py
+#  → src/data/transforms.py 顶部 `import torch`），此时 Qt 早已在进程里
+# —— 所以**三个后端全都会挂**，不只是 torch 后端：
+# 连"列出可用后端"（settings_panel 调 list_available_backends）都要先过 transformers→torch 这一关。
+#
+# 修法：在导入 PyQt5 之前先把 torch 拉起来。torch 未安装时静默跳过，
+# 不影响 ONNX / OpenVINO 后端（但注意 inference.py 仍会间接 import torch，
+# 那种环境下需要另行处理）。
+# ============================================================================
+try:
+    import torch as _torch_preload  # noqa: F401
+except Exception as _e:                                  # noqa: BLE001
+    # 不用 print 吵用户：没有 torch 也能走 ONNX 后端，真正的失败会在
+    # 模型加载线程里以对话框形式报出来。
+    _TORCH_PRELOAD_ERROR = f"{type(_e).__name__}: {_e}"
+else:
+    _TORCH_PRELOAD_ERROR = None
+
 from PyQt5.QtCore import Qt, QTimer  # noqa: E402
 from PyQt5.QtWidgets import (  # noqa: E402
     QApplication, QFileDialog, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
@@ -169,7 +200,42 @@ class MainWindow(QMainWindow):
         else:
             self.log(f"模型已加载，后端={det.backend}，阈值={det.threshold}", "#1e8e3e")
             self.settings_panel.set_status(f"已加载 · {det.backend}", "#1e8e3e")
+        # ★ 自检警告必须显式弹给用户看：lite*.onnx 那种"能加载但输出恒定"的坏模型
+        #   不弹窗的话，用户会看到满屏「判定为真实 · 0.4852」却以为是算法不行。
+        warns = list(getattr(det, "self_check_notes", []) or [])
+        if note:
+            warns.insert(0, note)
+        for w in warns:
+            self.log(f"⚠ 模型自检：{w}", "#c0392b")
+        if warns:
+            self.settings_panel.set_status("已加载，但模型自检未通过", "#c0392b")
+            QMessageBox.warning(
+                self, "模型自检警告",
+                "当前模型可能无法正常检测：\n\n" + "\n".join(f"· {w}" for w in warns)
+                + "\n\n请在「⑤ 系统设置」里换一个模型文件（默认 deploy/b16_g43.onnx）。",
+            )
         self.btn_start.setEnabled(True)
+
+    def closeEvent(self, event) -> None:
+        """关窗前停掉后台线程。
+
+        ★ 为什么必须：**销毁仍在运行的 QThread 会让 Qt fail-fast**
+        （本机实测退出码 `0xC0000409`，stderr `QThread: Destroyed while thread
+        is still running`）。选完大文件夹（缩略图要在后台跑约 76 秒）立刻关窗口
+        就会命中，所以关窗时主动停线程并等它退出。
+        """
+        try:
+            self.input_panel.shutdown()
+        except Exception:  # noqa: BLE001
+            pass
+        for w in (getattr(self, "worker", None), getattr(self, "loader", None)):
+            try:
+                if w is not None and w.isRunning():
+                    w.requestInterruption()
+                    w.wait(3000)
+            except Exception:  # noqa: BLE001
+                pass
+        super().closeEvent(event)
 
     def _on_load_failed(self, err: str) -> None:
         self.log("模型加载失败，请检查设置中的模型路径", "#c0392b")
@@ -228,7 +294,14 @@ class MainWindow(QMainWindow):
         c = self.result_panel.summary_counts
         msg = f"检测完成：共 {c['total']} 张，疑似伪造 {c['fake']} 张，真实 {c['real']} 张"
         if bad:
+            # ★ 只说"失败 N 张"用户无从下手：把**第一条**失败原因带出来
+            #   （缺图 / 坏图 / 中文路径等都在这里露出真实原因）。
             msg += f"，失败 {len(bad)} 张"
+            try:
+                first_p, first_err = bad[0]
+                msg += f"（例：{os.path.basename(str(first_p))} → {first_err}）"
+            except Exception:  # noqa: BLE001
+                pass
         self.log(msg, "#1e8e3e" if not bad else "#e67e22")
         self.result_panel.tabs.setCurrentIndex(1)
 
