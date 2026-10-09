@@ -1,15 +1,38 @@
 """图像预处理与数据增强。
 
-训练增强刻意保持"温和"：JPEG 压缩、缩放、加噪等属于**鲁棒性测试**手段，
+训练增强默认保持"温和"：JPEG 压缩、缩放、加噪等属于**鲁棒性测试**手段，
 若在训练中过度使用会把频域伪影一并破坏，反而损害检测性能。
 申报书 6.3 的鲁棒性测试是"评测手段"，不是"训练增强"，二者不能混淆。
 
-此处训练增强只做：随机水平翻转 + 轻微色彩抖动 + 极小角度旋转（<=5°）。
+默认训练增强只有：随机水平翻转 + 轻微色彩抖动 + 极小角度旋转（<=5°）。
+
+★ 2026-10-02 新增「强增强」开关（`aug` 参数，**默认全关**）
+----------------------------------------------------------------
+背景：ForenSynths 训练集只用到了 4 个类的约 4 万张（占比约 5.6%），
+而跨生成器泛化差距是项目两大短板之一。Wang et al. 2020（CNNDetection）
+指出 **JPEG 压缩 + 高斯模糊**是对付"生成器指纹被后处理破坏"的关键手段，
+其收益往往高于单纯加大数据量。
+
+但本项目与那篇论文有一处**根本不同**：本模型带一路**频域分支**
+（`src/models/freq_branch.py` + `dft.py`）。JPEG/模糊恰恰会抹掉高频伪影，
+也就是说 —— **这两种增强对本模型可能是"双刃"：帮分类支路泛化，
+却可能饿死频域支路**。所以这里刻意做成**可开关且默认关闭**，
+必须用「同数据、同配置、只切这一个开关」的对照实验来判定，
+**不得**在未验证的情况下默认打开并声称它有效。
+
+配置写法（`configs/*.yaml` 的 `data:` 段）：
+
+    data:
+      augment:
+        jpeg_prob: 0.5          # 每张图以 0.5 概率做一次 JPEG 重压缩；0=关
+        jpeg_quality: [30, 90]  # 质量区间（整数）
+        blur_prob: 0.3          # 每张图以 0.3 概率做一次高斯模糊；0=关
+        blur_sigma: [0.0, 1.5]  # sigma 区间；取到 0 相当于不模糊
 """
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
 import torch
@@ -22,11 +45,79 @@ IMAGENET_STD = np.array([0.26862954, 0.26130258, 0.27577711], dtype=np.float32) 
 class Transform:
     """轻量图像变换（只用 numpy + cv2，避免引入 albumentations 依赖）。"""
 
-    def __init__(self, size: int = 224, train: bool = False):
+    def __init__(self, size: int = 224, train: bool = False,
+                 aug: Optional[dict] = None):
         self.size = size
         self.train = train
         self.mean = IMAGENET_MEAN
         self.std = IMAGENET_STD
+
+        # ---- 强增强开关（默认全关；见模块 docstring 的「双刃」说明）----
+        a = aug or {}
+        self.jpeg_prob = self._prob(a.get("jpeg_prob"))
+        self.blur_prob = self._prob(a.get("blur_prob"))
+        self.jpeg_quality = self._pair(a.get("jpeg_quality"), (30, 90))
+        self.blur_sigma = self._pair(a.get("blur_sigma"), (0.0, 1.5))
+        # 评测（train=False）时一律不增强 —— 否则同一张图两次评测分数不同，
+        # 指标不可复现。这条比"省一个 if"重要得多，所以显式关掉。
+        if not self.train:
+            self.jpeg_prob = 0.0
+            self.blur_prob = 0.0
+
+    @staticmethod
+    def _prob(v) -> float:
+        """把配置里的概率归一成 [0,1] 的 float。
+
+        ⚠ 不能写成 `min(max(v or 0.0, 0.0), 1.0)` —— v 是字符串（如 `"x"`）时
+        `max("x", 0.0)` 会抛 `TypeError: '>' not supported between ...`，
+        把"配置写错"变成"训练在数据加载期崩溃"。统一走 float() 再兜底。
+        """
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return 0.0
+        if f != f:                       # NaN
+            return 0.0
+        return float(min(max(f, 0.0), 1.0))
+
+    @staticmethod
+    def _pair(v: Optional[Sequence], default: tuple) -> tuple:
+        """把配置里的 [lo, hi] 归一成 (float, float)；非法值退回默认并保序。"""
+        try:
+            lo, hi = float(v[0]), float(v[1])
+        except Exception:                       # noqa: BLE001
+            return (float(default[0]), float(default[1]))
+        return (lo, hi) if lo <= hi else (hi, lo)
+
+    def _jpeg(self, img: np.ndarray) -> np.ndarray:
+        """解到内存的 JPEG 重压缩（不落盘）。
+
+        ⚠ 不做 BGR↔RGB 互换：`imencode` 按输入数组的既有顺序编码，
+        `imdecode` 原样还原同一顺序 —— 这里进的是 RGB，出去仍是 RGB。
+        若中途多套一次 `cvtColor`，反而会把红蓝通道**静默调换**。
+        """
+        import cv2
+
+        q = int(round(np.random.uniform(self.jpeg_quality[0], self.jpeg_quality[1])))
+        q = int(min(max(q, 1), 100))
+        ok, enc = cv2.imencode(".jpg", np.ascontiguousarray(img),
+                               [int(cv2.IMWRITE_JPEG_QUALITY), q])
+        if not ok:
+            return img
+        dec = cv2.imdecode(enc, cv2.IMREAD_COLOR)
+        return img if dec is None else dec
+
+    def _blur(self, img: np.ndarray) -> np.ndarray:
+        import cv2
+
+        sigma = float(np.random.uniform(self.blur_sigma[0], self.blur_sigma[1]))
+        if sigma <= 1e-6:
+            return img
+        # 核宽取奇数且不小于 3（sigma=0 已被上面挡掉）
+        k = max(3, int(2 * round(3.0 * sigma) + 1))
+        if k % 2 == 0:
+            k += 1
+        return cv2.GaussianBlur(img, (k, k), sigma)
 
     def _resize(self, img: np.ndarray) -> np.ndarray:
         import cv2
@@ -73,6 +164,15 @@ class Transform:
                 gain = np.random.uniform(0.95, 1.05, size=3).astype(np.float32)
                 img = np.clip(img.astype(np.float32) * gain, 0, 255).astype(np.uint8)
 
+            # ---- 强增强（默认关；见模块 docstring）----
+            # 放在几何增强之后：JPEG/模糊是光度操作，与翻转/旋转可交换；
+            # 放最后也让「几何增强 → 后处理降质」的顺序更贴近真实取证链路。
+            # mask 不受影响（这两种操作都不移动像素）。
+            if self.jpeg_prob > 0 and np.random.rand() < self.jpeg_prob:
+                img = self._jpeg(img)
+            if self.blur_prob > 0 and np.random.rand() < self.blur_prob:
+                img = self._blur(img)
+
         x = img.astype(np.float32) / 255.0
         x = (x - self.mean) / self.std
         x = torch.from_numpy(x.transpose(2, 0, 1)).contiguous()
@@ -83,8 +183,9 @@ class Transform:
         return x, m
 
 
-def build_transform(size: int = 224, train: bool = False) -> Transform:
-    return Transform(size=size, train=train)
+def build_transform(size: int = 224, train: bool = False,
+                    aug: Optional[dict] = None) -> Transform:
+    return Transform(size=size, train=train, aug=aug)
 
 
 def denormalize(x: torch.Tensor) -> torch.Tensor:

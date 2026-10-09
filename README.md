@@ -151,8 +151,12 @@ python -m src.evaluation.ablation   --mode train      # 每项独立重训（--m
 
 # 5b) 跨生成器泛化（论文核心表）—— 按生成器分层采样，必须用它而不是 evaluate.py
 #     ★ --scores-out 把逐样本分数存盘：以后改指标定义可免推理重算（推理是最贵的一步）
+#     ⚠ 口径（2026-10-09 审计）：per_class 决定 n —— 300 ⇒ 13×2×300 = **7800**；
+#        论文/答辩表用的是 **per_class=150（n=3900）**，strict-9 则是 2700。
+#        两套抽样**不可比**，引用数字必须同时给 (权重 md5, 抽样口径, 聚合方式)。
+#        详见 docs/05「跨生成器测试协议」与 outputs/_audit_20261008/step8_perclass300_inventory.md。
 python scripts/eval_cross_generator.py --ckpt checkpoints/vibnet_best.pt \
-    --per-class 300 --out outputs/cross_gen \
+    --per-class 150 --out outputs/cross_gen \
     --scores-out outputs/cross_gen_scores/full.npz
 
 # 5b') 改过度量实现后，从已存分数秒级重算（复用同一段聚合逻辑，口径不会分叉）

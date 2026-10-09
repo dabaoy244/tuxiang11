@@ -24,16 +24,28 @@ patched 224² → 196 token + 1 cls），只是预训练目标不同：
 关键的底层视觉先验（边缘、纹理、颜色统计），足以让分类头收敛；
 论文中应如实写成「以 ImageNet-1K 预训练 ViT-B/16 初始化」并说明原因。
 
+★ 为什么还要一个 s16 档
+----------------------
+申报书另有「模型体积 ≤ 120MB」的硬指标，ViT-B/16 骨干本身就 87.5M 参数，
+没有余量。`BACKBONE_PRESETS` 里的 **s16**（ViT-S/16 规模，384 维 / 12 层，约
+22.5M 参数）是折中档，但它的骨干同样是随机初始化 ⇒ 一样训不出来。
+本脚本 `--variant s16` 去 timm 取 `vit_small_patch16_224.augreg_in21k_ft_in1k`
+（IN21k 预训练 + IN1k 微调，**必须走 hf-mirror.com**，huggingface.co 直连不可达），
+键名映射后落成 `pretrained/vit_s16_imagenet.pt`。
+
 用法
 ----
-    python scripts/fetch_pretrained_backbone.py                # 下载 + 转换 + 校验
-    python scripts/fetch_pretrained_backbone.py --check-only    # 只校验已有文件
-    python scripts/fetch_pretrained_backbone.py --mirror https://...  # 换镜像
+    python scripts/fetch_pretrained_backbone.py                    # b16：下载 + 转换 + 校验
+    python scripts/fetch_pretrained_backbone.py --variant s16       # s16（轻量档，走 hf-mirror）
+    python scripts/fetch_pretrained_backbone.py --check-only        # 只校验已有文件（不下载）
+    python scripts/fetch_pretrained_backbone.py --verify-only       # 只校验已转换的 .pt
+    python scripts/fetch_pretrained_backbone.py --url https://...   # 换源（自定义权重地址）
 
 产出
 ----
-    pretrained/vit_b16_imagenet.pt   ← 转换后的 state_dict（本仓库命名）
-  然后在配置里写：  model.spatial.backbone_weights: pretrained/vit_b16_imagenet.pt
+    pretrained/vit_b16_imagenet.pt   ← b16 转换后的 state_dict（本仓库命名）
+    pretrained/vit_s16_imagenet.pt   ← s16 转换后的 state_dict（轻量档）
+  然后在配置里写：  model.spatial.backbone_weights: pretrained/<对应档位>.pt
 """
 from __future__ import annotations
 
@@ -47,12 +59,43 @@ import urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-# torchvision 官方 ViT-B/16 ImageNet-1K 权重（文件名里的 hash 是官方固定的）
-DEFAULT_URL = "https://download.pytorch.org/models/vit_b_16-c867db91.pth"
-DEFAULT_SIZE = 346328529
-
+# torchvision / timm 官方权重地址与规模都在下面的 VARIANTS 里（按档位选）
 RAW_DIR = os.path.join(ROOT, "pretrained", "_raw")
-OUT_PATH = os.path.join(ROOT, "pretrained", "vit_b16_imagenet.pt")
+
+# --------------------------------------------------------------------------
+# 两个档位共用同一套「下载 → 改名 → 装进骨干校验」流程，只是源格式与规模不同：
+#   b16 —— torchvision ViT-B/16（download.pytorch.org 直连可达）
+#   s16 —— timm ViT-S/16 augreg（HuggingFace 源，**必须走 hf-mirror**，
+#           huggingface.co 在部分网络下不可达）。s16 是「模型体积 ≤120MB」
+#           这条硬指标的候选档，权重 88.3MB。
+# 注意：timm 的 s16 权重里 **没有** 本仓库 `blocks.N.mlp.0/.2` 这种名字，
+#       它是 `mlp.fc1/fc2`；且多一个 `head.*` 分类头（要丢掉）。
+VARIANTS = {
+    "b16": {
+        "url": "https://download.pytorch.org/models/vit_b_16-c867db91.pth",
+        "size": 346328529,
+        "raw": os.path.join(RAW_DIR, "vit_b_16_imagenet.pth"),
+        "out": os.path.join(ROOT, "pretrained", "vit_b16_imagenet.pt"),
+        "kind": "torchvision",
+        "preset": dict(hidden=768, depth=12, heads=12, mlp_ratio=4.0),
+        "note": "torchvision ViT-B/16 (ImageNet-1K, IMAGENET1K_V1)",
+    },
+    "s16": {
+        "url": ("https://hf-mirror.com/timm/vit_small_patch16_224.augreg_in21k_ft_in1k"
+                "/resolve/main/pytorch_model.bin"),
+        "size": 88257517,
+        "raw": os.path.join(RAW_DIR, "vit_s16_timm.bin"),
+        "out": os.path.join(ROOT, "pretrained", "vit_s16_imagenet.pt"),
+        "kind": "timm",
+        "preset": dict(hidden=384, depth=12, heads=6, mlp_ratio=4.0),
+        "note": "timm vit_small_patch16_224.augreg_in21k_ft_in1k (IN21k 预训练 + IN1k 微调)",
+    },
+}
+
+# 向后兼容：旧调用点（不传 --variant）默认仍是 b16
+DEFAULT_URL = VARIANTS["b16"]["url"]
+DEFAULT_SIZE = VARIANTS["b16"]["size"]
+OUT_PATH = VARIANTS["b16"]["out"]
 
 
 # --------------------------------------------------------------------------
@@ -109,8 +152,9 @@ def download(url: str, dest: str, expect_size: int | None = None) -> bool:
 
 
 # --------------------------------------------------------------------------
-def convert(raw_path: str, out_path: str) -> dict:
-    """把 torchvision ViT-B/16 的权重名映射成本仓库骨干的参数名。
+def convert(raw_path: str, out_path: str, kind: str = "torchvision",
+            source_note: str = "") -> dict:
+    """把上游权重名映射成本仓库骨干（TinyViTFallback）的参数名。
 
     命名对照（左＝本仓库 TinyViTFallback，右＝torchvision vit_b_16）
         patch_embed.weight           <- conv_proj.weight
@@ -128,11 +172,47 @@ def convert(raw_path: str, out_path: str) -> dict:
     ★ qkv 不用重排：两边都是 torch 多头注意力的 (3E, E) 布局，行序均为 [q; k; v]。
       本仓库 forward 里 `reshape(b,n,3,h,c//h)` 后取 qkv[0]/[1]/[2] 分别当 q/k/v，
       与这个行序一致。
+
+    kind="timm"（ViT-S/16 等）时**不需要逐层列名**：timm 的键名已与本仓库同构，
+    只有 5 个前缀要改，外加丢弃 `head.*`：
+        patch_embed.proj.*  -> patch_embed.*
+        blocks.N.attn.qkv.* -> blocks.N.qkv.*
+        blocks.N.attn.proj.*-> blocks.N.proj.*
+        blocks.N.mlp.fc1.*  -> blocks.N.mlp.0.*
+        blocks.N.mlp.fc2.*  -> blocks.N.mlp.2.*
+        head.{weight,bias}  -> 丢弃（ImageNet 分类头，本任务不用）
     """
     import torch
 
     ck = torch.load(raw_path, map_location="cpu", weights_only=True)
     src = ck.get("model", ck.get("state_dict", ck)) if isinstance(ck, dict) else ck
+
+    if kind == "timm":
+        rename = {
+            "patch_embed.proj.": "patch_embed.",
+            ".attn.qkv.": ".qkv.",
+            ".attn.proj.": ".proj.",
+            ".mlp.fc1.": ".mlp.0.",
+            ".mlp.fc2.": ".mlp.2.",
+        }
+        dst, dropped = {}, []
+        for k, v in src.items():
+            if k.startswith("head."):
+                dropped.append(k)
+                continue
+            nk = k
+            for a, b in rename.items():
+                if a in nk:
+                    nk = nk.replace(a, b)
+                    break
+            if nk in dst:
+                raise RuntimeError(f"改名冲突：{k} -> {nk}")
+            dst[nk] = v
+        n_layer = len({k.split(".")[1] for k in dst if k.startswith("blocks.")})
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        torch.save({"model": dst, "source": source_note, "num_layers": n_layer}, out_path)
+        return {"张量数": len(dst), "层数": n_layer, "输出": out_path,
+                "丢弃(分类头)": len(dropped)}
 
     dst = {}
     direct = {
@@ -190,14 +270,15 @@ def convert(raw_path: str, out_path: str) -> dict:
             print(f"           {s}")
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    torch.save({"model": dst, "source": "torchvision vit_b_16 IMAGENET1K_V1",
+    torch.save({"model": dst,
+                "source": source_note or "torchvision vit_b_16 IMAGENET1K_V1",
                 "num_layers": n_layer}, out_path)
     return {"张量数": len(dst), "层数": n_layer, "输出": out_path,
             "未匹配": len(unmatched)}
 
 
 # --------------------------------------------------------------------------
-def verify(path: str) -> bool:
+def verify(path: str, preset: dict | None = None) -> bool:
     """把转换后的权重真的装进骨干，逐项核对，并做一次前向。
 
     只报"加载没报错"是不够的：`load_state_dict(strict=False)` 会**静默放过**
@@ -209,8 +290,8 @@ def verify(path: str) -> bool:
     ck = torch.load(path, map_location="cpu", weights_only=True)
     sd = ck["model"]
 
-    model = TinyViTFallback(hidden=768, depth=12, patch=16, img=224, heads=12,
-                            mlp_ratio=4.0)
+    preset = preset or VARIANTS["b16"]["preset"]
+    model = TinyViTFallback(patch=16, img=224, **preset)
     ret = model.load_state_dict(sd, strict=False)
     missing = list(ret.missing_keys)
     unexpected = list(ret.unexpected_keys)
@@ -242,55 +323,79 @@ def verify(path: str) -> bool:
     if spatial_var < 1e-8:
         print("  ⚠️  token 间无空间差异 —— 骨干可能是退化的（常数输出）")
         ok = False
+
+    # ★ 与"随机初始化骨干"对照：预训练权重若**真的装上了**，在**同一输入**上的
+    #   输出应与随机骨干明显不同。这是能真正抓住"load_state_dict 静默没生效 /
+    #   权重被零初始化"的一道闸门（strict=False 的 missing/unexpected 有时为空，
+    #   但只要源权重是随机/零张量就查不出来）。
+    ref = TinyViTFallback(patch=16, img=224, **preset)
+    ref.eval()
+    with torch.no_grad():
+        y0 = ref(pixel_values=x2).last_hidden_state
+    cos = float(torch.nn.functional.cosine_similarity(
+        y2.flatten(1), y0.flatten(1), dim=1).mean())
+    print(f"  与随机骨干余弦相似度 : {cos:.4f}（越接近 1.0 越可疑）")
+    if cos > 0.99:
+        print("  ⚠️  与随机初始化几乎一致 —— 权重可能根本没生效")
+        ok = False
     return ok
 
 
 # --------------------------------------------------------------------------
 def main() -> int:
-    ap = argparse.ArgumentParser(description="获取并转换 ViT-B/16 预训练骨干")
-    ap.add_argument("--url", default=DEFAULT_URL)
-    ap.add_argument("--size", type=int, default=DEFAULT_SIZE)
-    ap.add_argument("--out", default=OUT_PATH)
-    ap.add_argument("--raw", default=os.path.join(RAW_DIR, "vit_b_16_imagenet.pth"))
+    ap = argparse.ArgumentParser(description="获取并转换离线 ViT 预训练骨干（b16 / s16）")
+    ap.add_argument("--variant", default="b16", choices=sorted(VARIANTS),
+                    help="b16 = torchvision ViT-B/16（申报书原设定）；s16 = timm ViT-S/16（轻量档）")
+    ap.add_argument("--url", default=None)
+    ap.add_argument("--size", type=int, default=None)
+    ap.add_argument("--out", default=None)
+    ap.add_argument("--raw", default=None)
     ap.add_argument("--check-only", action="store_true", help="跳过下载，只转换+校验")
     ap.add_argument("--verify-only", action="store_true", help="只校验已转换的文件")
     args = ap.parse_args()
 
+    spec = VARIANTS[args.variant]
+    url = args.url or spec["url"]
+    size = args.size if args.size is not None else spec["size"]
+    out = args.out or spec["out"]
+    raw = args.raw or spec["raw"]
+
     print("=" * 72)
-    print(" 预训练骨干获取：torchvision ViT-B/16 (ImageNet-1K)")
+    print(f" 预训练骨干获取：[{args.variant}] {spec['note']}")
     print("=" * 72)
 
     if args.verify_only:
         print("\n[3/3] 校验")
-        return 0 if verify(args.out) else 1
+        return 0 if verify(out, spec["preset"]) else 1
 
     if not args.check_only:
-        print(f"\n[1/3] 下载\n  源: {args.url}\n  目标: {args.raw}")
-        if not download(args.url, args.raw, args.size):
+        print(f"\n[1/3] 下载\n  源: {url}\n  目标: {raw}")
+        if not download(url, raw, size):
             print("\n下载未完成。本脚本支持断点续传，直接重跑即可。")
             return 1
     else:
         print("\n[1/3] 跳过下载（--check-only）")
-        if not os.path.exists(args.raw):
-            print(f"  ❌ 原始权重不存在：{args.raw}")
+        if not os.path.exists(raw):
+            print(f"  ❌ 原始权重不存在：{raw}")
             return 1
 
     print("\n[2/3] 转换命名")
-    info = convert(args.raw, args.out)
+    info = convert(raw, out, kind=spec["kind"], source_note=spec["note"])
     for k, v in info.items():
         print(f"  {k}: {v}")
 
     print("\n[3/3] 校验（真的装进骨干 + 前向）")
-    ok = verify(args.out)
+    ok = verify(out, spec["preset"])
 
+    rel = os.path.relpath(out, ROOT).replace("\\", "/")
     print("\n" + "=" * 72)
     if ok:
         print(" ✅ 完成。在配置里启用：")
         print("      model:")
         print("        spatial:")
         print("          backbone: tiny_vit")
-        print("          backbone_variant: b16")
-        print("          backbone_weights: pretrained/vit_b16_imagenet.pt")
+        print(f"          backbone_variant: {args.variant}")
+        print(f"          backbone_weights: {rel}")
     else:
         print(" ❌ 校验未通过，见上面 missing/unexpected 列表。")
     print("=" * 72)

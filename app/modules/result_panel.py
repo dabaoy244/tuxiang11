@@ -71,16 +71,15 @@ class ImageView(QLabel):
 
 
 def read_image_bgr(path: str) -> Optional[np.ndarray]:
-    """读取图像为 BGR ndarray（兼容中文路径）。"""
-    import cv2
+    """读取图像为 BGR ndarray（兼容中文路径）。
 
-    img = cv2.imread(path, cv2.IMREAD_COLOR)
-    if img is None:
-        try:
-            img = cv2.imdecode(np.fromfile(path, dtype=np.uint8), cv2.IMREAD_COLOR)
-        except Exception:
-            return None
-    return img
+    直接复用 `src/deploy/inference.py::imread_unicode` —— 它对非 ASCII 路径
+    会跳过 `cv2.imread`（那条路在 Windows 上必刷一行 `findDecoder ... can't
+    open/read file` 警告），改用 `np.fromfile + imdecode`。行为一致、日志干净。
+    """
+    from src.deploy.inference import imread_unicode
+
+    return imread_unicode(path)
 
 
 class ResultPanel(QGroupBox):

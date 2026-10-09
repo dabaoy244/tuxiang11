@@ -100,8 +100,12 @@ model:
     hidden_dim: 192
     latent_dim: 192
     beta_max: 0.1
-    beta_warmup_start: 20
-    beta_warmup_end: 40
+    beta_warmup_start: 20            # ★ 2026-10-06 决定：**保持 20/40**，与 b16 improved 两臂同协议，
+    beta_warmup_end: 40              #   保证三臂可同表。代价（已知并接受）：β 峰值只有约 0.045
+                                     #   （续跑时锚被重置为 0，更低；从头跑则从 stage1 真实轮数起）。
+                                     #   备选配方 11/18（抄 _auto_beta_full.yaml，β 实测峰值 0.1000）
+                                     #   会改变 β 协议 ⇒ 只能单列、不可混表，故本次不采用。
+                                     #   ⚠ 机制与「横幅会骗你」的坑见 memory/topics/number-pitfalls.md。
     kl_clip_min: 0.0
     kl_clip_max: 10.0
     kl_reduction: "mean"
@@ -174,8 +178,14 @@ train:
   optimizer: "adamw"
   betas: [0.9, 0.999]
   grad_clip_norm: 5.0
-  amp: false
-  batch_size: 32                   # 模型小了，batch 可以开大
+  amp: true                        # ★ 2026-10-05：原为 false（"只有 CPU 笔记本"的旧假设）。
+                                   #   云端 12GB GPU 上 amp=false = 全 fp32，stage2 必 OOM。
+  amp_dtype: "bfloat16"            # 与 improved(b16) 两臂同口径。注：trainer.py:142 缺省即 bfloat16，
+                                   #   此处显式写出仅为可读性，不改变行为。
+  batch_size: 16                   # ★ 2026-10-05：32 → 16。stage2 解冻定位解码器后，
+                                   #   32 在 12GB 卡上首个 iter 即 CUDA OOM（实证，见
+                                   #   outputs/cloud_logs_20261005_improved_lite_crash/）。
+                                   #   与 improved(b16) 两臂的 train batch 同口径；不够再退 8。
   eval_every: 1
   save_every: 5
   log_every: 50

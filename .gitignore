@@ -13,6 +13,12 @@ pretrained/
 # ⚠ .tgz 不在 *.tar.gz 规则内：outputs/upload/weights_20261002/best_weights.tgz
 #   是 2.5GB 的权重打包（9 臂 best.pt），必须显式挡掉，否则一次 git add 就会撑爆仓库。
 *.tgz
+# ⚠ **同一个坑的第二种形态（2026-10-09 实测发现）**：
+#   outputs/upload/weights_improved_20261005/epochs.tar 是 **7.6 GB** 的轨迹权重打包
+#   （22 个 epoch*.pt）。上面挡了 *.tgz、下面又挡了 outputs/**/*.tar.gz，
+#   但 **`*.tar` 本身谁都没挡** ⇒ 直接 `git add -A` 会往仓库里塞 7.6 GB。
+#   ⇒ 归档类扩展名要**逐个列全**，别以为挡了一个就挡住了同类。
+*.tar
 
 # ---- 部署产物（ONNX / IR / exe）----
 # 同样必须锚定到根目录，否则会匹配 src/deploy/（推理与量化源码）。
@@ -58,6 +64,10 @@ build/
 dist/
 .venv/
 venv/
+# ★ 2026-10-09：可见窗口工具链拉下来的**虚拟机镜像与安装包**（outputs/_ui_test/rebind/），
+#   镜像单个 179 MB。它们是"下载的工具"，不是项目产物 ⇒ 不入库（与 *.exe 同类）。
+*.qcow2
+*.msi
 
 # ---- 编辑器 / 系统 ----
 .vscode/

@@ -109,8 +109,10 @@ def _looks_tampered(filename: str) -> bool:
 class BaseDataset(Dataset):
     kind = "base"
 
-    def __init__(self, size: int = 224, train: bool = False):
-        self.tf = build_transform(size, train)
+    def __init__(self, size: int = 224, train: bool = False,
+                 aug: Optional[dict] = None):
+        # `aug` 只在 train=True 时生效（强增强开关，见 src/data/transforms.py）
+        self.tf = build_transform(size, train, aug)
         self.samples: List[dict] = []
         self.layout: Optional[str] = None      # 供排查用的布局标记
 
@@ -171,7 +173,8 @@ class GenSynthsDataset(BaseDataset):
                  size: int = 224, max_samples: Optional[int] = None, train: bool = False,
                  include_generators: Optional[Sequence[str]] = None,
                  exclude_generators: Optional[Sequence[str]] = None,
-                 max_per_generator: Optional[int] = None):
+                 max_per_generator: Optional[int] = None,
+                 aug: Optional[dict] = None):
         """参数 `include_generators` / `exclude_generators` / `max_per_generator`
         用于**构造跨生成器验证集（val_cross）**：
 
@@ -187,7 +190,7 @@ class GenSynthsDataset(BaseDataset):
         `<split>/{0_real,1_fake}`，第一层就成了 `0_real`/`1_fake`，此时筛选键不是
         生成器名 —— 所以下面做了硬失败保护，避免筛出空集还照跑。
         """
-        super().__init__(size, train)
+        super().__init__(size, train, aug)
         base = os.path.join(root, name)
 
         # 候选根目录：优先 <base>/<split>，其次兼容旧的扁平布局 <base>/{0_real,1_fake}。
@@ -324,8 +327,9 @@ class TamperDataset(BaseDataset):
     kind = "tamper"
 
     def __init__(self, root: str, name: str, split: str = "train", size: int = 224,
-                 max_samples: Optional[int] = None, train: bool = False):
-        super().__init__(size, train)
+                 max_samples: Optional[int] = None, train: bool = False,
+                 aug: Optional[dict] = None):
+        super().__init__(size, train, aug)
         base = os.path.join(root, name)
         cand = [os.path.join(base, split), base]
 
@@ -437,8 +441,9 @@ class DemoDataset(BaseDataset):
     kind = "demo"
 
     def __init__(self, root: str, split: str = "train", size: int = 224,
-                 max_samples: Optional[int] = None, train: bool = False):
-        super().__init__(size, train)
+                 max_samples: Optional[int] = None, train: bool = False,
+                 aug: Optional[dict] = None):
+        super().__init__(size, train, aug)
         img_dir = os.path.join(root, split, "image")
         mask_dir = os.path.join(root, split, "mask")
         for ip in _list_images(img_dir):
@@ -557,6 +562,12 @@ def build_dataloaders(cfg: dict, use_demo: bool = False) -> Dict[str, DataLoader
     size = d.get("image_size", 224)
     bs = cfg["train"].get("batch_size", 16)
     nw = d.get("num_workers", 4)
+    # 强增强开关（默认 None ⇒ 全关）。只在 train 分支生效，见 transforms.py。
+    # 这里对三个 split 一律透传，Transform 内部会按 train 标志自行屏蔽。
+    aug = d.get("augment")
+    if aug:
+        print(f"[data] 训练强增强已启用：{aug}"
+              f"（评测 split 不受影响）")
 
     def make(sets, split, train: bool, batch_size: int, shuffle: bool):
         ds_list = []
@@ -572,16 +583,17 @@ def build_dataloaders(cfg: dict, use_demo: bool = False) -> Dict[str, DataLoader
             sp = s.get("split") or split
             if use_demo or s.get("kind") == "demo":
                 ds = DemoDataset(d["demo"]["root"], sp, size,
-                                 s.get("max_samples"), train)
+                                 s.get("max_samples"), train, aug=aug)
             elif s["kind"] == "gensynth":
                 ds = GenSynthsDataset(d["root"], s["name"], sp, size,
                                       s.get("max_samples"), train,
                                       include_generators=s.get("include_generators"),
                                       exclude_generators=s.get("exclude_generators"),
-                                      max_per_generator=s.get("max_per_generator"))
+                                      max_per_generator=s.get("max_per_generator"),
+                                      aug=aug)
             else:
                 ds = TamperDataset(d["root"], s["name"], sp, size,
-                                   s.get("max_samples"), train)
+                                   s.get("max_samples"), train, aug=aug)
             wanted.append((s["name"], sp, len(ds), s.get("kind", "?")))
             ds_list.append(ds)
 

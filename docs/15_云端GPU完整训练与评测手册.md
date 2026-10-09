@@ -592,10 +592,18 @@ python -m src.evaluation.evaluate --config configs/default.yaml \
 python scripts/eval_cross_generator.py --config configs/default.yaml \
     --ckpt checkpoints/vibnet_best.pt \
     --data-root data/Datasets/ForenSynths/test \
-    --per-class 300 --batch-size 32 --device cuda \
+    --per-class 150 --batch-size 32 --device cuda \
     --out outputs/cross_gen --tag full \
     --scores-out outputs/cross_gen_scores/full.npz      # ★ 存逐样本分数
 ```
+
+> ⚠ **口径注（2026-10-09 审计更正）**：上面命令原写 `--per-class 300`，已改为 **150**（论文/答辩口径）。
+> **n = 2 × per_class × 生成器数** ⇒ 150 时 13 类 **3900** / strict-9 **2700**（300 则 7800 / 5400）；
+> 两套抽样**不可相减**，引用必须带 `(权重 md5, 抽样口径, 聚合方式)`。
+> ★ 另：下面原文里的"**2600 张**"是**早期门控实验**的 n
+> （`outputs/cross_gen_pretrained/`、`outputs/cross_gen_random/`，`per_class=100` + 13 生成器 ⇒ 2600），
+> **与这条命令不是同一次战役** —— 原文把两次的 n 混在一段里，此处已按命令口径更正。
+> 证据与全仓清查：`outputs/_audit_20261008/step6_shipped_0928.md` §2、`step8_perclass300_inventory.md`。
 
 > **★ 一定要加 `--scores-out`。** 推理是这个流程最贵的一步（本机 CPU 上 2600 张
 > 约 9 分钟/臂），而指标是最后一步才算。本项目吃过一次亏：两条臂各烧完约 9 分钟推理，
