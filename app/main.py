@@ -212,7 +212,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self, "模型自检警告",
                 "当前模型可能无法正常检测：\n\n" + "\n".join(f"· {w}" for w in warns)
-                + "\n\n请在「⑤ 系统设置」里换一个模型文件（默认 deploy/b16_g43.onnx）。",
+                + "\n\n请在「⑤ 系统设置」里换一个模型文件（默认 deploy/b16_s3best.onnx）。",
             )
         self.btn_start.setEnabled(True)
 

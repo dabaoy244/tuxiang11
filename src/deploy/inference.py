@@ -140,25 +140,31 @@ class Detector:
         backend: str = "torch",
         image_size: int = 224,
         threshold: float = 0.5,
-        # ★★★ 2026-10-09（D 组 ③）：默认权重 = 审计认定的交付臂 g43
-        #   （`improved_noaug_best.pt`, md5 `e1e5a7e9…`；strict-9 宏平均 AUC
-        #   0.8671 vs 出厂 0928 的 0.8434 ⇒ +2.37pp★，同战役配对 CI 不含 0）。
+        # ★★★ 2026-10-11：默认权重 = `geofix_s3_best.pt`
+        #   （md5 `184fb15c1787cf5470397adbe8a1ac93`）—— 几何修复 + stage3 联合微调。
+        #   它是**两个任务都优于 g43** 的第一个交付件：分类持平（strict-9 宏 AUC
+        #   0.8632 vs g43 0.8665，−0.33pp）、定位 mIoU★ **+13.79pp**
+        #   （0.3482 vs g43 在同命令同分母 n=474 下重测的 0.2103）。
+        #   前两任：0928 出厂件 → g43(improved_noaug_best) → geofix_s2_epoch10。
         #   ⚠ 不要用同名的 `checkpoints/vibnet_best.pt`（09-26 旧权重，
         #   p_fake 恒在 0.54 附近、对真图/篡改图无区分）—— 认 md5，不认文件名。
-        ckpt: str = "outputs/upload/weights_improved_20261005/improved_noaug_best.pt",
+        ckpt: str = "outputs/upload/weights_geofix_s3_20261011/geofix_s3_best.pt",
         # ★★★ 与 `app/modules/settings_panel.py` 的 `DEFAULTS["onnx"]` **必须一致**
-        #   —— 两处都改才算"换了默认模型"。本件由上面那份 g43 导出：
-        #   `python -m src.deploy.export_onnx --ckpt <g43 .pt> --out deploy/b16_g43.onnx
-        #    --opset 17 --config configs/improved_noaug.yaml`（纯 CPU trace，¥0，363.4 MB）。
-        #   一致性已验：与 .pt 同抽样对比 mask_logits max|Δ| 5.5e-4、prob_fake 5.3e-5。
+        #   —— 两处都改才算"换了默认模型"。本件由上面那份 .pt 导出：
+        #   `python -m src.deploy.export_onnx --ckpt <上面的 .pt>
+        #    --out deploy/b16_s3best.onnx --opset 17
+        #    --config configs/geofix_s3_only.yaml --simplify`（纯 CPU trace，¥0，363.4 MB）。
+        #   一致性已验（logit 级）：cls_logits max|Δ| 2.10e-05、
+        #   mask_logits max|Δ| 3.89e-04；且已核实 --simplify 真跑过（Identity 72→0）。
         #   ⚠ 不要用 deploy/lite*.onnx —— 那是 `--ckpt ""` 导出的随机初始化件。
-        onnx_path: str = "deploy/b16_g43.onnx",
-        # ★★★ 2026-10-09（T0-3）：与上面的 onnx_path 同步换成 g43 的 IR。
-        #   旧件 `deploy/vibnet_ir/vibnet.xml` 是 **0928** 的，保留留档；
-        #   若这里不改，OpenVINO 后端会静默跑另一个权重。
-        #   生成命令：`python -m src.deploy.optimize_openvino \
-        #     --onnx deploy/b16_g43.onnx --out deploy/vibnet_ir_g43`（本地 CPU，37 s，¥0）
-        openvino_ir: str = "deploy/vibnet_ir_g43/b16_g43.xml",
+        onnx_path: str = "deploy/b16_s3best.onnx",
+        # ★★★ 2026-10-11：与上面的 onnx_path 同步换成同一权重的 IR。
+        #   若这里不改，OpenVINO 后端会**静默跑另一个权重**。
+        #   生成：`openvino.convert_model('deploy/b16_s3best.onnx')` +
+        #     `save_model(..., compress_to_fp16=False)` → `deploy/vibnet_ir_s3best/`
+        #     （本地 CPU，1.2 s，¥0；已回读验证：输入 [?,3,224,224]、3 个输出）。
+        #   旧件（0928 的 `vibnet_ir/`、g43 的 `vibnet_ir_g43/`、e10 的）都保留留档。
+        openvino_ir: str = "deploy/vibnet_ir_s3best/b16_s3best.xml",
         config_path: str = "configs/default.yaml",
         device: str = "cpu",
         num_threads: int = 0,
@@ -250,25 +256,67 @@ class Detector:
         self._ov_req = self._ov.create_infer_request()
 
     # ==================================================================
+    @staticmethod
+    def _crop_geom(h: int, w: int, size: int):
+        """返回「等比缩放到短边=size 再中心裁剪」这套几何的参数 (nh, nw, top, left)。
+
+        ★★★ 2026-10-10：**必须与 `preprocess` 用同一套几何**，否则热力图会画错位置。
+
+        为什么要有这个函数：`preprocess` 走的是「等比缩放 + 中心裁剪」，
+        于是模型**输出的 224×224 掩码只对应原图中心的 min(h,w)×min(h,w) 方形**。
+        旧代码在 `predict` 里写的是 `cv2.resize(mask, (w, h))` —— 那是把
+        "中心裁剪块的预测"**整幅拉伸**回原图，等于把热力图铺到了模型根本没看过的区域上，
+        而且**位置整体偏移**（256×384 图会偏 31 像素，见 deliverables/14）。
+        正确做法：先把掩码**贴回它实际对应的裁剪框**、框外置 0，再缩放回原图尺寸。
+
+        实测影响（256×384）：旧写法与真值框错位 31px；新写法对齐。
+        """
+        if h == w:
+            return size, size, 0, 0
+        scale = size / min(h, w)
+        nh, nw = int(round(h * scale)), int(round(w * scale))
+        top = max(0, (nh - size) // 2)
+        left = max(0, (nw - size) // 2)
+        return nh, nw, top, left
+
     def preprocess(self, img_bgr: np.ndarray) -> np.ndarray:
         """缩放 + 归一化 + HWC->CHW，返回 (1,3,S,S) float32。"""
         import cv2
 
         h, w = img_bgr.shape[:2]
+        S = self.image_size
         if h == w:
-            resized = cv2.resize(img_bgr, (self.image_size, self.image_size),
-                                 interpolation=cv2.INTER_AREA if h > self.image_size else cv2.INTER_LINEAR)
+            resized = cv2.resize(img_bgr, (S, S),
+                                 interpolation=cv2.INTER_AREA if h > S else cv2.INTER_LINEAR)
         else:
-            scale = self.image_size / min(h, w)
-            nh, nw = int(round(h * scale)), int(round(w * scale))
+            scale = S / min(h, w)
+            nh, nw, top, left = self._crop_geom(h, w, S)
             resized = cv2.resize(img_bgr, (nw, nh),
                                  interpolation=cv2.INTER_AREA if scale < 1 else cv2.INTER_LINEAR)
-            top, left = max(0, (nh - self.image_size) // 2), max(0, (nw - self.image_size) // 2)
-            resized = resized[top:top + self.image_size, left:left + self.image_size]
+            resized = resized[top:top + S, left:left + S]
 
         rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
         rgb = (rgb - IMAGENET_MEAN) / IMAGENET_STD
         return rgb.transpose(2, 0, 1)[None].astype(np.float32)
+
+    def mask_to_full(self, mask: np.ndarray, h: int, w: int) -> np.ndarray:
+        """把模型输出的 (S,S) 掩码**正确铺回** (h,w) 原图。
+
+        旧做法 `cv2.resize(mask, (w,h))` 只在**方形图**上等价（那时裁剪框就是全图）；
+        非方形图上它把中心块的预测拉满全图 ⇒ 位置错 + 尺寸错。
+        """
+        import cv2
+
+        S = self.image_size
+        if h == w:
+            return cv2.resize(mask, (w, h), interpolation=cv2.INTER_LINEAR)
+        nh, nw, top, left = self._crop_geom(h, w, S)
+        canvas = np.zeros((nh, nw), dtype=np.float32)
+        # 模型只对裁剪框内负责 ⇒ 框内贴预测、框外留 0（=不声称那里有篡改）
+        m = cv2.resize(np.asarray(mask, dtype=np.float32), (S, S),
+                       interpolation=cv2.INTER_LINEAR)
+        canvas[top:top + S, left:left + S] = m
+        return cv2.resize(canvas, (w, h), interpolation=cv2.INTER_LINEAR)
 
     # ------------------------------------------------------------------
     def _forward_raw(self, x: np.ndarray):
@@ -387,7 +435,10 @@ class Detector:
         dt = (time.perf_counter() - t0) * 1000
 
         h, w = img.shape[:2]
-        mask_full = cv2.resize(mask, (w, h), interpolation=cv2.INTER_LINEAR)
+        # ★★★ 2026-10-10：改用 `mask_to_full`（贴回中心裁剪框、框外置 0），
+        #   不再是 `cv2.resize(mask,(w,h))`（整幅拉伸）。必须与「新几何训练出的权重」
+        #   一起上：旧权重学的是"错位的掩码"，对它们这句拉伸反而是自洽的。
+        mask_full = self.mask_to_full(mask, h, w)
         overlay = self.build_overlay(img, mask_full)
 
         warns: List[str] = []
