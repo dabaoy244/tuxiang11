@@ -47,6 +47,52 @@ EXTERNAL_DOMAINS = {
                 "与训练域（ForenSynths 生成图 / CASIAv2 拼接·复制移动）**不同源**，"
                 "全程未参与训练 ⇒ 这是**零样本跨数据集**结果。",
     },
+    # ---- 批次 1-B：四个新增评测域（2026-10-10 接入）--------------------------
+    # 都是「只评测、不训练」；放置要求同 COVERAGE：data/external/<域>/test/{image,mask}。
+    "DEFACTO": {
+        "kind": "tamper",
+        "expect_total": 8000,
+        "expect_real": 4000,
+        "expect_fake": 4000,
+        "note": "DEFACTO（Kaggle defacto-test + defacto-test-pristine）："
+                "4 类伪造（splicing / copy-move / removal / face-swap）混杂。"
+                "★ 取它的第一条理由：本仓 `diag_area_buckets` 早先实测「篡改区 ≤2% 的图」"
+                "mIoU 只有 0.046，而 DEFACTO 的篡改区占比集中在这个最弱的档 ⇒ "
+                "**这是对定位短板最有针对性的一域**，不是随手多的一个数据集。"
+                "真实图来自 COCO（`au_*`），带**全零掩码文件**（同 COVERAGE 的坑）。",
+    },
+    "IMD2020": {
+        "kind": "tamper",
+        "expect_total": 3500,
+        "expect_real": 0,
+        "expect_fake": 3500,
+        "note": "IMD2020（HF KhangTruong/IMD2020 test 划分）：真实场景的**相机传感器级**"
+                "篡改（splicing/removal/copy-move 等），CAT-Net(IJCV2022) 报过的 IML 基准。"
+                "⚠ **没有真实图**（Au=0）⇒ 本域的 ACC / ACC@0.5 在语义上是"
+                "「篡改召回率」，不是平衡准确率，**不得**与含真图的域并列比 ACC；"
+                "跨域可比的是 AUC/AP（阈无关）与 miou_tampered_only。",
+    },
+    "CocoGlide": {
+        "kind": "tamper",
+        "expect_total": 1024,
+        "expect_real": 512,
+        "expect_fake": 512,
+        "note": "CocoGlide（HF nebula/CocoGlide，TruFor 论文的扩散修复定位基准）："
+                "**GLIDE 文本引导 inpainting** ⇒ 伪造机制是生成式的，与 CASIAv2/COVERAGE 的"
+                "「手工拼接·复制移动」、IMD2020 的「传感器级」都不同源。真实图带全零掩码。",
+    },
+    "CASIA1.0": {
+        "kind": "tamper",
+        "expect_total": 920,
+        "expect_real": 0,
+        "expect_fake": 920,
+        "note": "CASIA v1.0（从 IML-ViT.zip 内 images/CASIA1.0/{Tp,Gt} 抽取）："
+                "ManTra-Net(CVPR2019)/SPAN(ECCV2020) 报过的**老基准**。"
+                "⚠ 只有 Tp+Gt，**无 Au**（同 IMD2020 的注意事项）；"
+                "另注意它与训练域 CASIA v2 同源（v1 是 v2 的子集系）⇒ "
+                "**这不是零样本跨域**，是「同源早期版本」行，报数时必须标注，"
+                "不得当作跨数据集泛化证据。",
+    },
 }
 
 
@@ -157,8 +203,26 @@ def main() -> int:
     n_tamp = int((loc or {}).get("n_tampered") or 0)
     if n_loc and n_loc != n:
         bad.append(f"定位有效样本 {n_loc} ≠ 分类样本总数 {n}")
-    if n_tamp and meta.get("expect_fake") and n_tamp != meta["expect_fake"]:
-        bad.append(f"含真实前景的定位样本 {n_tamp} ≠ 篡改样本 {meta['expect_fake']}")
+    # ★ 2026-10-10：这里原来写的是 `n_tamp != expect_fake` ⇒ 直接判失败。
+    #   实测 DEFACTO 会差 6 张（改 transform 前）/ 443 张（改之后），原因**不是**
+    #   数据错：篡改区极小的图，短边缩到 224 后区域整块消失（INTER_NEAREST 采不到点），
+    #   `n_tampered` 统计的是「GT 真有前景」的图，于是必然**少于**篡改图数。
+    #   所以改成分两个方向判：
+    #     n_tamp > expect_fake  →  不可能（比篡改图还多）⇒ 报错
+    #     n_tamp < expect_fake  →  可解释的短缺 ⇒ 打印差额与原因，不报错
+    size_hint = cfg["data"].get("image_size", 224)
+    if meta.get("expect_fake"):
+        if n_tamp > meta["expect_fake"]:
+            bad.append(f"含真实前景的定位样本 {n_tamp} **多于**该域篡改图数 "
+                       f"{meta['expect_fake']}——这是不可能的，说明计数或数据有问题")
+        elif n_tamp < meta["expect_fake"]:
+            gap = meta["expect_fake"] - n_tamp
+            print(f"ℹ 含真实前景的定位样本 {n_tamp} < 该域篡改图数 {meta['expect_fake']}，"
+                  f"差 {gap} 张")
+            print(f"  原因：这 {gap} 张图的篡改区在缩到 {size_hint}×{size_hint} 后消失"
+                  f"（区域太小，INTER_NEAREST 采不到点）。不是数据错误。")
+            print(f"  影响：它们的逐图 IoU 不计入 miou_tampered_only ⇒ 该口径的分母"
+                  f"是 {n_tamp} 而非 {meta['expect_fake']}，报数时必须写明。")
 
     loc = res.get("loc") or {}
     row = {
@@ -219,6 +283,8 @@ def main() -> int:
         f"| 定位 mIoU（池化，宽松） | {g5(loc.get('miou'))} |",
         f"| 定位 mIoU（仅篡改图，★文献标准） | **{g5(loc.get('miou_tampered_only'))}** |",
         f"| 定位 mIoU（全部非空图，严格） | {g5(loc.get('miou_per_sample'))} |",
+        f"| **像素级 AUC**（阈无关，ManTra-Net/SPAN 第一位指标） | "
+        f"**{g5(loc.get('pixel_auc'))}** |",
         f"| Dice | {g5(loc.get('dice'))} |",
         f"| Pixel Acc | {g5(loc.get('pixel_acc'))} |",
         "",

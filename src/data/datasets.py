@@ -115,6 +115,22 @@ class BaseDataset(Dataset):
         self.tf = build_transform(size, train, aug)
         self.samples: List[dict] = []
         self.layout: Optional[str] = None      # 供排查用的布局标记
+        #: ★ 2026-10-10（四类判别）：把数据集的**二值标签**(0 真/1 假)映射到**类别 id**。
+        #: 由 `build_dataloaders` 从配置项 `class_map` 注入，缺省 None = 不做映射（保持原行为）。
+        #: 为什么做成"映射"而不是"直接写类 id"：各数据集的二值标签语义**是统一的**
+        #: （真/假），而它们该归到四类里的哪一类**因数据集而异** ——
+        #:   同一个 `1`（假），ForenSynths 是「AI 整幅生成」，DEFACTO 是「传统篡改」，
+        #:   DEFACTO_swapping 是「AI 局部编辑」。
+        #: 把差异收在配置里，就不必为每个数据集写一个 Dataset 子类。
+        self.class_map: Optional[dict] = None
+        #: ★★★ 2026-10-11：`max_samples` **没有用到**的那部分样本（从未进过训练）。
+        #: 由构造函数在抽样时**顺手记下**，而不是让外部重新推导 —— 因为
+        #: `random.Random(3407).shuffle` **依赖输入列表的顺序**，"在别处重推一遍"
+        #: 一旦顺序不同就会给出错的补集，而那是**静默泄漏**（留出集混进训练样本，
+        #: 指标虚高且看不出来）。唯一实现见 `split_used_unused`。
+        #: 用途：`data/Datasets` 里各训练源的补集 = **免费的留出集**
+        #: （如 IMD2020/DEFACTO 四个源合计 84,178 张从未训练过的传统篡改图）。
+        self.unused_samples: List[dict] = []
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -124,9 +140,12 @@ class BaseDataset(Dataset):
         img = _read_image(s["image"])
         mask = _read_mask(s["mask"]) if s.get("mask") else None
         x, m = self.tf(img, mask)
+        lab = int(s["label"])
+        if self.class_map:
+            lab = int(self.class_map.get(lab, lab))
         return {
             "image": x,
-            "label": int(s["label"]),
+            "label": lab,
             "mask": m,
             "has_mask": bool(s.get("mask")),
             "name": os.path.basename(s["image"]),
@@ -161,6 +180,37 @@ def _interleave_labels(samples: list, seed: int = 3407) -> list:
         if i < len(neg):
             out.append(neg[i])
     return out
+
+
+def split_used_unused(samples: list, max_samples: Optional[int],
+                      seed: int = 3407) -> tuple:
+    """按**与数据集构造函数完全相同的抽样规则**把样本切成 `(用过的, 从未用过的)`。
+
+    ★★ 为什么必须抽成唯一实现（2026-10-11）
+    --------------------------------------
+    这是"留出集"的**唯一正确来源**：`max_samples` 只用了每个源的一部分，
+    补集就是**从未进过训练**的样本。若在别处把这段逻辑重写一遍，两处一旦漂移，
+    "留出集"就可能**混进训练样本** —— 那是**静默泄漏**：指标会虚高，而且从结果上看不出来。
+    所以两个构造函数与本函数**共用同一实现**，并由
+    `scripts/test_source_root_override.py` 之外的 `test_holdout_split.py` 守住
+    "本函数给出的 used == 数据集实际载入的样本"。
+
+    ⚠ 一个容易算错的细节：截断是**每类各取一半**（`half = max_samples // 2`），
+      而不是取前 max_samples 个。所以对**没有真实图**的源（IMD2020、DEFACTO 那几个，
+      `neg` 为空），`max_samples: 12000` 实际只载入 **6000** 条。补集因此比直觉大得多。
+
+    返回的 `used` 与 `unused` 都是**未交错**的列表（构造函数随后会 `_interleave_labels`）；
+    交错不改变集合，所以按集合比较是安全的。
+    """
+    if not max_samples or len(samples) <= max_samples:
+        return list(samples), []
+    rng = random.Random(seed)
+    pos = [s for s in samples if s["label"] == 1]
+    neg = [s for s in samples if s["label"] == 0]
+    half = max_samples // 2
+    rng.shuffle(pos)
+    rng.shuffle(neg)          # 注意：与 pos 共用同一个 rng ⇒ 顺序不能调换
+    return pos[:half] + neg[:half], pos[half:] + neg[half:]
 
 
 # ==========================================================================
@@ -308,14 +358,8 @@ class GenSynthsDataset(BaseDataset):
         return real_list, fake_list
 
     def _maybe_subsample(self, max_samples: Optional[int]) -> None:
-        samples = self.samples
-        if max_samples and len(samples) > max_samples:
-            rng = random.Random(3407)
-            pos = [s for s in samples if s["label"] == 1]
-            neg = [s for s in samples if s["label"] == 0]
-            half = max_samples // 2
-            rng.shuffle(pos); rng.shuffle(neg)
-            samples = pos[:half] + neg[:half]
+        # 与 `TamperDataset` 共用同一条抽样规则（唯一实现见 `split_used_unused`）。
+        samples, self.unused_samples = split_used_unused(self.samples, max_samples)
         # 无论是否抽样都交错：否则前段全真、后段全伪造，
         # 用 --max-batches 做部分评测时抽不到正类样本（见 _interleave_labels）。
         self.samples = _interleave_labels(samples)
@@ -423,13 +467,9 @@ class TamperDataset(BaseDataset):
                   f"（篡改 {n_pos} / 真实 {n_neg}，掩码 {len(mask_index)} 个）")
 
         samples = self.samples
-        if max_samples and len(samples) > max_samples:
-            rng = random.Random(3407)
-            pos = [s for s in samples if s["label"] == 1]
-            neg = [s for s in samples if s["label"] == 0]
-            rng.shuffle(pos); rng.shuffle(neg)
-            half = max_samples // 2
-            samples = pos[:half] + neg[:half]
+        # 与 `GenSynthsDataset` 共用同一条抽样规则（唯一实现见 `split_used_unused`）。
+        # 补集记进 `self.unused_samples`（= 从未训练过的样本，可作留出集）。
+        samples, self.unused_samples = split_used_unused(samples, max_samples)
         # 无论是否抽样都交错：否则列表是「前面全 Au 真图、后面全 Tp 篡改图」，
         # 用 --max-batches 做部分评测时 `n_tampered=0`，mIoU 全 0（见 _interleave_labels）。
         self.samples = _interleave_labels(samples)
@@ -581,23 +621,87 @@ def build_dataloaders(cfg: dict, use_demo: bool = False) -> Dict[str, DataLoader
             # 这样才表达得了「拿 val 当训练集、拿 test 当验证集」这类实验协议，
             # 例如 configs/lite_realval.yaml。不写 split 时行为与原来完全一致。
             sp = s.get("split") or split
+            # ★ 2026-10-11：**逐源 root 覆盖**。
+            #   为什么需要：`data/external/` 下有一批**留出**域（如 DiffSeg30k_val）
+            #   要当**验证集**用，它们按协议**不在** `data/Datasets` 下，
+            #   而 `build_dataloaders` 原来只会用全局 `data.root` ⇒ 用不了。
+            #   加这个覆盖后，外部留出域可以留在原地当 val。
+            #   ⚠ **红线仍硬编码守住**（见下面那个 SystemExit）：外部域**绝不许当训练集**。
+            src_root = s.get("root") or d["root"]
+            if train:
+                _segs = [p.lower() for p in str(src_root).replace("\\", "/").split("/")]
+                if "external" in _segs:
+                    raise SystemExit(
+                        f"[data] ❌ 训练集不许指向外部留出域：name={s.get('name')!r} "
+                        f"root={src_root!r}。\n"
+                        f"  这是本项目的**防泄漏红线**：`data/external/` 下的域只用于"
+                        f"评测或验证，一旦进训练集就不再是留出集。\n"
+                        f"  （若确实要拿它训练，请把它复制/软链到 `data/Datasets/` 下"
+                        f" 并接受'该域不再是留出域'这个后果。）")
             if use_demo or s.get("kind") == "demo":
                 ds = DemoDataset(d["demo"]["root"], sp, size,
                                  s.get("max_samples"), train, aug=aug)
             elif s["kind"] == "gensynth":
-                ds = GenSynthsDataset(d["root"], s["name"], sp, size,
+                ds = GenSynthsDataset(src_root, s["name"], sp, size,
                                       s.get("max_samples"), train,
                                       include_generators=s.get("include_generators"),
                                       exclude_generators=s.get("exclude_generators"),
                                       max_per_generator=s.get("max_per_generator"),
                                       aug=aug)
             else:
-                ds = TamperDataset(d["root"], s["name"], sp, size,
+                ds = TamperDataset(src_root, s["name"], sp, size,
                                    s.get("max_samples"), train, aug=aug)
+            # ★ 四类判别：把配置里的 `class_map` 注入数据集（见 BaseDataset.class_map）。
+            #   缺省不注入 ⇒ 行为与改动前完全一致（二分类不受影响）。
+            if s.get("class_map"):
+                ds.class_map = {int(k): int(v) for k, v in s["class_map"].items()}
             wanted.append((s["name"], sp, len(ds), s.get("kind", "?")))
             ds_list.append(ds)
 
         loaded = [x for x in ds_list if len(x) > 0]
+
+        # ★ 2026-10-10（四类判别）防**静默失效**：
+        #   最危险的失败不是崩溃，而是「num_classes=4 但标签只映射出 2 类」——
+        #   `cross_entropy` 不会报错（2 类标签在 0..3 范围内合法），模型只会见到
+        #   4 类中的 2 类，训练看起来完全正常，结果全错。
+        #   所以这里把**实际标签直方图**打出来，并在训练集覆盖不全时**硬失败**。
+        try:
+            n_cls = int((cfg.get("model", {}).get("head", {}) or {}).get("num_classes", 2))
+        except Exception:  # noqa: BLE001
+            n_cls = 2
+        if n_cls > 2:
+            hist = {}
+            for ds in loaded:
+                for smp in ds.samples:
+                    lab = int(smp["label"])
+                    if ds.class_map:
+                        lab = int(ds.class_map.get(lab, lab))
+                    hist[lab] = hist.get(lab, 0) + 1
+            print(f"[data] ★ 类别直方图 split={split}（num_classes={n_cls}）："
+                  f"{dict(sorted(hist.items()))}")
+            if split == "train":
+                missing = sorted(set(range(n_cls)) - set(hist))
+                # ★ 2026-10-10 补：**越界**比"缺类"更危险 —— 交叉熵的 target 合法范围
+                #   是 0..C-1，出现 C 及以上的标签会直接 RuntimeError；
+                #   而出现负数或"看似合法但不该有"的 0 会静默训错。
+                #   第一版硬闸只查了 missing，漏了这个方向，结果配置里写 1..4 时
+                #   直方图冒出"类 0 有 17 张、类 4 有 29098 张"才被发现。
+                oob = sorted(set(hist) - set(range(n_cls)))
+                if oob:
+                    raise SystemExit(
+                        f"[data] ❌ 训练集出现了越界的类别 id {oob}（合法范围 "
+                        f"0..{n_cls - 1}）。交叉熵会因 target 越界直接崩，"
+                        f"或者在某些写法下静默训错。请检查各数据集的 `class_map`："
+                        f"**类 id 必须 0-based**，且'整份都是同一类'的数据集要写两个键"
+                        f"（如 {{0: 3, 1: 3}}）而不是单键 {{1: 3}}，否则 label=0 的样本"
+                        f"会原样穿透成类 0。")
+                if missing:
+                    raise SystemExit(
+                        f"[data] ❌ 训练集缺少类别 {missing}（只有 {sorted(hist)}）。"
+                        f"配置了 num_classes={n_cls} 但数据只覆盖 {len(hist)} 类 —— "
+                        f"这不会自己报错，会静默训出一个残废模型。请检查各数据集的 "
+                        f"`class_map` 与目录布局。")
+
         empty = [(n, sp, k) for (n, sp, n_i, k) in wanted if n_i == 0]
         if empty:
             print(f"[data] ⚠ split={split}：配置了 {len(empty)} 个数据集但**一个样本都没有**"

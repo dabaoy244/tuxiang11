@@ -28,7 +28,14 @@ from torch.utils.data import DataLoader
 
 from ..losses.multi_task import MultiTaskLoss
 from ..models.vib import beta_schedule
-from .metrics import ClassificationMetrics, LocalizationMetrics
+from .metrics import ClassificationMetrics, LocalizationMetrics, MulticlassMetrics
+
+
+#: 多类分类的类名（仅用于日志可读性）。0-based，与 `F.cross_entropy` 的约定一致。
+#: 四类判别（读法 b）：真实 / AI 整幅生成 / AI 局部编辑 / 传统篡改 —— 见 deliverables/16。
+_MULTICLASS_NAMES: Dict[int, List[str]] = {
+    4: ["真实", "AI整幅生成", "AI局部编辑", "传统篡改"],
+}
 
 
 # ==========================================================================
@@ -588,13 +595,22 @@ class Trainer:
     @torch.no_grad()
     def validate(self, beta: float = 0.0) -> dict:
         self.model.eval()
-        cls_m = ClassificationMetrics()
+        # ★ 2026-10-11：多类必须走 MulticlassMetrics。
+        #   原来无条件用 `ClassificationMetrics`，而它是**二分类**实现
+        #   （`update` 只取 `softmax(...)[:,1]`、`roc_auc` 又按 `pos=(y==1)`/`neg=(y==0)`
+        #   取两侧）。四类训练时标签是 0..3，于是 AUC 会**静默超过 1**
+        #   —— 实测 20 轮里 8 轮 >1、最大 1.1605，而训练照跑、best.pt 照选、
+        #   全程无报错 ⇒ `fourclass_best.pt` 是按一个无意义的指标选出来的。
+        n_cls = int(self.cfg.get("model", {}).get("head", {}).get("num_classes", 2))
+        cls_m = (ClassificationMetrics() if n_cls <= 2
+                 else MulticlassMetrics(n_cls, _MULTICLASS_NAMES.get(n_cls)))
         loc_m = LocalizationMetrics(self.threshold)
         crit = MultiTaskLoss(self.cfg)
         crit.normalizer = self.criterion.normalizer       # 复用训练统计量
         crit = crit.to(self.device)
         total, nb = 0.0, 0
         has_loc_pred = False
+        seen_labels: List[int] = []
 
         for batch in self.val_loader:
             images = batch["image"].to(self.device)
@@ -609,6 +625,7 @@ class Trainer:
             nb += 1
 
             cls_m.update(out["cls_logits"].float().cpu().numpy(), labels.cpu().numpy())
+            seen_labels.extend(int(v) for v in labels.cpu().numpy().ravel())
             if mask is not None and mvalid is not None and bool(mvalid.any()):
                 idx = mvalid.cpu().numpy()
                 loc_m.update(out["mask_prob"].float().cpu().numpy()[idx],
@@ -616,9 +633,40 @@ class Trainer:
                 has_loc_pred = True
 
         res = {"loss": total / max(1, nb)}
-        cls_res = cls_m.compute(self.threshold)
-        res.update({f"cls_{k}": v for k, v in cls_res.items() if isinstance(v, (int, float))})
-        res["cls"] = cls_res
+        if n_cls <= 2:
+            cls_res = cls_m.compute(self.threshold)
+            res.update({f"cls_{k}": v for k, v in cls_res.items()
+                        if isinstance(v, (int, float))})
+            res["cls"] = cls_res
+        else:
+            cls_res = cls_m.compute()
+            # 拍平成与二分类**同名**的键（acc/f1/auc），这样 `monitor: val_cls_auc`
+            # 在四类下也解析得到，且语义仍是「越大越好、阈无关」。
+            res["cls_acc"] = cls_res["acc"]
+            res["cls_f1"] = cls_res["macro_f1"]
+            res["cls_auc"] = cls_res["macro_auc_ovr"]
+            # 逐类 P/R/F1 一并拍平：类间混淆（例如「AI 整幅生成」被吸进
+            # 「AI 局部编辑」）在只看宏平均时是看不见的。
+            for nm, d in cls_res["per_class"].items():
+                res[f"cls_n_{nm}"] = d["n"]
+                res[f"cls_recall_{nm}"] = d["recall"]
+                res[f"cls_f1_{nm}"] = d["f1"]
+                res[f"cls_auc_{nm}"] = d["auc_ovr"]
+            res["cls"] = cls_res
+            # ★ 验证集缺类必须**显式警告**，不能只体现在宏平均里。
+            #   四类训练时 val 集里一个「AI 局部编辑」样本都没有，
+            #   而当时没有任何提示 ⇒ 那一类的能力全程无人监控。
+            hist = {i: int(sum(1 for v in seen_labels if v == i)) for i in range(n_cls)}
+            res["cls_val_hist"] = hist
+            missing = [i for i, c in hist.items() if c == 0]
+            if missing:
+                names = [res["cls"].get("class_names", [])[i] if i < n_cls else str(i)
+                         for i in missing]
+                msg = (f"[validate] ⚠ 验证集缺类 {missing}（{names}）：这些类的能力"
+                       f"本轮**完全没有被监控**。宏平均会被少数出现的类主导，"
+                       f"不要据此判断模型已学会全部 {n_cls} 类。")
+                res["cls_val_missing"] = msg
+                self.log(msg)
         res["val_loss"] = res["loss"]
         if has_loc_pred:
             loc_res = loc_m.compute()
@@ -638,7 +686,15 @@ class Trainer:
         }, path)
         return path
 
-    def load(self, path: str, strict: bool = False) -> dict:
+    def load(self, path: str, strict: bool = False,
+             drop_prefixes: tuple = ()) -> dict:
+        """加载权重。
+
+        drop_prefixes: 要**显式剔除**的键前缀（例：P0 频域对照实验里
+            `("freq.mask_net.",)`）。用途：暖启动时若某些参数属于"被对照的那个
+            机制"，则各臂必须都从**同一状态**出发，否则某一臂会白得一个已训好的
+            头（本项目的偏置来源）。剔除结果会**大声明印**，绝不静默。
+        """
         from ..models.spatial_branch import infer_backbone_variant
 
         ckpt = torch.load(path, map_location=self.device, weights_only=False)
@@ -658,8 +714,44 @@ class Trainer:
                 f"  参见 docs/09_指标可达性与骨干选型.md"
             )
 
+        # ★★★ 2026-10-10（四类判别暖启动）：**按形状过滤**再加载。
+        #   为什么必须这样：PyTorch 的 `load_state_dict(strict=False)` 只容忍
+        #   **缺失/多余键**，**不容忍形状不匹配** —— 形状变了照样抛 RuntimeError。
+        #   而"暖启动 + 改分类头"天生就形状不匹配（cls_head 最后一层 2→4 类），
+        #   所以必须先把形状不符的键剔掉。
+        #   ⚠ 但绝**不能静默**：剔掉的键要打出来，否则会悄悄退化成"头是随机的"，
+        #   而训练看起来一切正常 —— 这正是本项目最忌讳的静默失效。
+        _cur = self.model.state_dict()
+        _sd = ckpt["model"]
+        _dropped = []
+        _filtered = {}
+        _excluded = []
+        for _k, _v in _sd.items():
+            if drop_prefixes and _k.startswith(tuple(drop_prefixes)):
+                _excluded.append(_k)
+                continue
+            if _k in _cur and tuple(_cur[_k].shape) != tuple(_v.shape):
+                _dropped.append((_k, tuple(_v.shape), tuple(_cur[_k].shape)))
+                continue
+            _filtered[_k] = _v
+        if drop_prefixes:
+            _n_kept = sum(1 for k in _cur if k.startswith(tuple(drop_prefixes)))
+            print(f"[ckpt] ★ 按 drop_prefixes={tuple(drop_prefixes)} 显式剔除 "
+                  f"{len(_excluded)} 个键（这些参数**保持随机初始化**）；"
+                  f"当前模型该前缀下有 {_n_kept} 个参数。")
+            if not _excluded and _n_kept:
+                print("[ckpt] ⚠ 一个键都没剔到 —— 前缀写错了？对照实验会因此产生偏置，请检查。")
+        if _dropped:
+            print(f"[ckpt] ⚠ 有 {len(_dropped)} 个键因**形状不符**被跳过（不加载）：")
+            for _k, _a, _b in _dropped[:12]:
+                print(f"        {_k}  ckpt{_a} -> model{_b}")
+            if len(_dropped) > 12:
+                print(f"        …共 {len(_dropped)} 个")
+            print("[ckpt]   ⇒ 这些参数**保持随机初始化**。若被跳过的是分类头，"
+                  "说明是本意（改类数）；若是别的层，说明配置与权重不匹配，需要查。")
+
         try:
-            missing = self.model.load_state_dict(ckpt["model"], strict=strict)
+            missing = self.model.load_state_dict(_filtered, strict=strict)
         except RuntimeError as e:
             raise RuntimeError(
                 f"加载 {path} 失败：{e}\n"

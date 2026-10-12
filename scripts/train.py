@@ -74,6 +74,10 @@ def main() -> int:
     ap.add_argument("--workers", type=int, default=None)
     ap.add_argument("--device", default=None)
     ap.add_argument("--resume", default=None)
+    ap.add_argument("--resume-drop-prefix", default=None,
+                    help="暖启动时**显式剔除**的键前缀（逗号分隔）。用于对照实验："
+                         "若某参数属于被对照的那个机制，各臂必须从同一状态出发，"
+                         "否则会白得一个已训好的头。例：--resume-drop-prefix freq.mask_net.")
     ap.add_argument("--limit-batches", type=int, default=None)
     ap.add_argument("--tag", default="vibnet")
     ap.add_argument("--amp", action="store_true",
@@ -222,7 +226,8 @@ def main() -> int:
     trainer = Trainer(cfg, model, dev, loaders["train"], loaders["val"],
                       logger=logger, ckpt_prefix=args.tag)
     if args.resume and os.path.exists(args.resume):
-        ckpt = trainer.load(args.resume)
+        _drop = tuple(p.strip() for p in (args.resume_drop_prefix or "").split(",") if p.strip())
+        ckpt = trainer.load(args.resume, drop_prefixes=_drop)
         if args.start_stage is None:
             print(f"[train] 注意：--resume 只加载权重（该 ckpt 属于阶段 "
                   f"{ckpt.get('stage')}、epoch {ckpt.get('epoch')}），"

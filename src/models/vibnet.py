@@ -28,7 +28,7 @@ import torch
 import torch.nn as nn
 
 from .cs_cam import CSCAM
-from .freq_branch import FrequencyBranch
+from .freq_branch import build_freq_branch
 from .gradient_stop import GradientStopLayer
 from .mobile_unetv2 import LocalizationBranch
 from .spatial_branch import SpatialBranch
@@ -46,7 +46,8 @@ class VIBNet(nn.Module):
 
         # ---- 1.1 空频双分支
         self.spatial = SpatialBranch(cfg)
-        self.freq = FrequencyBranch(cfg)
+        # use_freq=False 时构造"零频域"下限臂（P0 对照实验用），接口与真实分支一致
+        self.freq = build_freq_branch(cfg)
 
         # ---- 1.1(3) 交叉注意力融合
         self.fusion = CSCAM(
@@ -133,11 +134,11 @@ class VIBNet(nn.Module):
             out["edge_prob"] = loc_out["edge_prob"]
 
         if return_intermediate:
+            # 频域中间量只在真实频域分支下可取；零频域臂（use_freq=False）没有 mask_net
+            freq_dbg = self.freq.forward_with_debug(x)
             out.update({
                 "F_spa": f_spa, "F_freq": f_freq, "F_fusion": f_fusion,
-                "freq_mask": self.freq.mask_net(
-                    torch.log1p(self.freq.to_amp_phase(x)[0])
-                ),
+                "freq_mask": freq_dbg.get("mask"),
                 "cls_token": cls_token, "latent_z": z,
             })
         return out

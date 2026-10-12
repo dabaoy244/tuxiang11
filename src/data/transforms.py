@@ -119,20 +119,64 @@ class Transform:
             k += 1
         return cv2.GaussianBlur(img, (k, k), sigma)
 
-    def _resize(self, img: np.ndarray) -> np.ndarray:
+    def _resize_pair(self, img: np.ndarray, mask: Optional[np.ndarray] = None):
+        """把 img（和可选的 mask）用**同一套几何变换**落到 size×size。
+
+        ★★★ 2026-10-10 修复一个**一直在的严重 bug**：原实现里
+              img  = self._resize(img)                    # 等比缩放到短边=size + 中心裁剪
+              mask = cv2.resize(mask, (size, size))       # 整幅直接拉伸
+            这是**两个不同的几何变换**。对非方形图，图像只保留原图**中心的
+            min(h,w)×min(h,w) 方形**，掩码却覆盖 100% 原图 ⇒ 掩码与图像错位。
+
+        实测（用"亮块+对应掩码"探针直接量图/掩码重合度）：
+            224x224   → IoU 1.0000   （方形走同一分支，无问题）
+            1024x1024 → IoU 0.9998
+            256x384   → IoU 0.6636   ← 错位
+            384x256   → IoU 0.6636
+            600x800   → IoU 0.7576
+        而本仓 CASIAv2 训练集只有 **0.2%** 是方形（可见面积占比 67.3%）
+        ⇒ 定位支路**几乎全程在错位监督下训练**，且所有定位 mIoU 都是在这条
+        管线下测的。修完必须重训定位支路，旧的定位数字与新数字**不可比**。
+
+        为什么必须让 mask 跟着走同一条路：定位是像素级对应任务，
+        图与掩码的空间对应关系是**唯一**的监督信号，任何不一致都会直接把
+        监督信号变成噪声。
+        """
         import cv2
 
         h, w = img.shape[:2]
         if h == w:
-            return cv2.resize(img, (self.size, self.size), interpolation=cv2.INTER_AREA
-                              if h > self.size else cv2.INTER_LINEAR)
-        # 保持长宽比缩放 + 中心裁剪，避免拉伸改变频域伪影的各向异性
-        scale = self.size / min(h, w)
-        nh, nw = int(round(h * scale)), int(round(w * scale))
-        img = cv2.resize(img, (nw, nh), interpolation=cv2.INTER_AREA if scale < 1 else cv2.INTER_LINEAR)
-        top = max(0, (nh - self.size) // 2)
-        left = max(0, (nw - self.size) // 2)
-        return img[top:top + self.size, left:left + self.size]
+            interp = cv2.INTER_AREA if h > self.size else cv2.INTER_LINEAR
+            img2 = cv2.resize(img, (self.size, self.size), interpolation=interp)
+            m2 = (cv2.resize(mask.astype(np.float32), (self.size, self.size),
+                             interpolation=cv2.INTER_NEAREST)
+                  if mask is not None else None)
+        else:
+            # 保持长宽比缩放 + 中心裁剪，避免拉伸改变频域伪影的各向异性
+            scale = self.size / min(h, w)
+            nh, nw = int(round(h * scale)), int(round(w * scale))
+            interp = cv2.INTER_AREA if scale < 1 else cv2.INTER_LINEAR
+            img2 = cv2.resize(img, (nw, nh), interpolation=interp)
+            m2 = (cv2.resize(mask.astype(np.float32), (nw, nh),
+                             interpolation=cv2.INTER_NEAREST)
+                  if mask is not None else None)
+            top = max(0, (nh - self.size) // 2)
+            left = max(0, (nw - self.size) // 2)
+            img2 = img2[top:top + self.size, left:left + self.size]
+            if m2 is not None:
+                m2 = m2[top:top + self.size, left:left + self.size]
+
+        # 兜底：round 极端情况下裁剪后可能差 1 像素，保证输出严格 size×size
+        if img2.shape[0] != self.size or img2.shape[1] != self.size:
+            img2 = cv2.resize(img2, (self.size, self.size),
+                              interpolation=cv2.INTER_LINEAR)
+            if m2 is not None:
+                m2 = cv2.resize(m2, (self.size, self.size),
+                                interpolation=cv2.INTER_NEAREST)
+
+        if m2 is not None:
+            m2 = (m2 > 0.5).astype(np.float32)
+        return img2, m2
 
     def __call__(self, img: np.ndarray, mask: Optional[np.ndarray] = None):
         """img: HxWx3 uint8 RGB；mask: HxW uint8 {0,1} 或 None。
@@ -141,11 +185,7 @@ class Transform:
         """
         import cv2
 
-        img = self._resize(img)
-        if mask is not None:
-            mask = cv2.resize(mask.astype(np.float32), (self.size, self.size),
-                              interpolation=cv2.INTER_NEAREST)
-            mask = (mask > 0.5).astype(np.float32)
+        img, mask = self._resize_pair(img, mask)
 
         if self.train:
             if np.random.rand() < 0.5:                        # 水平翻转

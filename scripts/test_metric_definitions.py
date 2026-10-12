@@ -113,6 +113,37 @@ def part_a_localization() -> None:
              len(m2.per_sample_iou) == 0 and m2.n_tampered == 0)
     print()
 
+    # ---------------------------------------------------------------- 像素级 AUC
+    # 2026-10-10 新增。动机：ManTra-Net / SPAN 的**第一位定位指标是 pixel-level AUC**，
+    # 而本仓库此前只有 mIoU / Dice / PixelAcc —— 想跟它们对标就得先有这一项。
+    # 实现用**直方图分箱**（6.5 万箱）而不是把所有像素存下来：CASIAv2 test 一跑
+    # 就是 6.3e7 个像素，存 float32 要 250MB+；分箱后只占 ~1MB，误差上界 ~1.5e-5。
+    # 同一箱内按"并列"给 0.5 权重，与分类 AUC 的秩平均约定一致。
+    print("  像素级 AUC（阈无关；与 ManTra-Net/SPAN 的 pixel-level AUC 同义）")
+
+    def _pauc(prob, gt):
+        m = LocalizationMetrics(threshold=0.5)
+        m.update(np.asarray(prob, dtype=np.float32), np.asarray(gt, dtype=np.float32))
+        return m.compute()["pixel_auc"]
+
+    g1 = np.array([[[[1.0, 1.0], [0.0, 0.0]]]], dtype=np.float32)
+    chk("完美可分 → 1.0",
+        _pauc(np.array([[[[0.9, 0.9], [0.1, 0.1]]]]), g1), 1.0)
+    chk("完全反向 → 0.0",
+        _pauc(np.array([[[[0.1, 0.1], [0.9, 0.9]]]]), g1), 0.0)
+    # ★ 这条与分类 AUC 的同分约定必须一致：全同分 ⇒ 0.5（不是 0、也不是 1）
+    chk("分数全同 → 0.5",
+        _pauc(np.full((1, 1, 2, 2), 0.5, dtype=np.float32), g1), 0.5)
+    chk("一半可分 → 0.5",
+        _pauc(np.array([[[[0.9, 0.1], [0.1, 0.9]]]]), g1), 0.5)
+    chk_true("无篡改像素 → nan",
+             np.isnan(_pauc(np.array([[[[0.9, 0.1], [0.1, 0.9]]]]),
+                            np.zeros((1, 1, 2, 2), dtype=np.float32))))
+    # 分箱误差上界：一个正类像素恰在相邻箱、一个负类恰在另一箱 ⇒ 仍应接近 1
+    chk_true("分箱不改变可分性（1e-3 内）",
+             _pauc(np.array([[[[1.0 - 1e-6, 1.0 - 1e-6], [1e-6, 1e-6]]]]), g1) > 0.999)
+    print()
+
 
 # ==========================================================================
 def part_b_classification() -> None:
