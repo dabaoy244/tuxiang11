@@ -1,0 +1,68 @@
+{
+  "signer": "codex",
+  "doc": "deliverables/485_v15数据审计goal_第0-1-2项_预注册_20261104.md",
+  "doc_md5": "cbb0c94020c9b69919a9224cd3bc7679",
+  "doc_lines": 270,
+  "doc_bytes": 40921,
+  "doc_mtime": "2026-11-04T03:56:34+08:00",
+  "signed_at": "2026-11-04T04:10:13+08:00",
+  "host": "PC-20260321VJZK",
+  "overall": "APPROVED",
+  "checks": [
+    {
+      "id": "C1",
+      "verdict": "PASS",
+      "evidence": "Get-Content -Encoding utf8 -Raw 后按 LF 切分=270 个逻辑行（nLF=269，末段为空）；Length=40921 B；.NET MD5=cbb0c94020c9b69919a9224cd3bc7679；LastWriteTime=2026-11-04T03:56:34+08:00；四项均与冻结值逐位一致。当前执行器实际为 Windows PowerShell 5.1，默认 Get-Content 会按本地代码页误读 UTF-8，故显式 UTF-8 后按冻结口径统计逻辑行。"
+    },
+    {
+      "id": "C2",
+      "verdict": "PASS",
+      "evidence": "Get-ChildItem deliverables 后以 Name -match '^48[0-9]' 统计：480–485 共 6 个正式文件；其中 '^485_' 且非 .bak-* 正式 485 文档=1 份（md5=cbb0c94020c9b69919a9224cd3bc7679）；486 计数=0、487 计数=0。"
+    },
+    {
+      "id": "C3",
+      "verdict": "PASS",
+      "evidence": "§2 L49–L157 区域的外层 ```text 围栏位于 L50/L158，抽取 block 内容 L51–L157 共 107 行；34/34 清单项命中：四份 manifest 路径及 240000/43227/35852/79567、两份冻结 json 的 path/md5/bytes、outputs/audit_v15/inputs/ 搬运、val_sel CLI 的 10/10 flags 与 required/default/无 --thr-from 现搜说明、14 列 CSV 表头、487 报告路径、host/ts/cmd 与 5 json+3 csv=8 .md5、字段定义 23/23；AutoSplice 四类 1,962/1,279/422/248 与 as_?_real 自身 sha256 规则均在块内；块内 '见 §N' 外指计数=0。"
+    },
+    {
+      "id": "C4",
+      "verdict": "PASS",
+      "evidence": "thr_status 三值及 thr_searched/四数值/五 null+两 F1 null 的唯一绑定齐全；f1_*_i 仅在 rows[]、f1_*_macro/f1_pooled 仅在 summary；clean 明含 sum(per_family[*].unmapped_rows)==0；1 族不可判定且另一对>0 明定落 leak；第 0 项 failed_checks 空/非空与 fig_level_leak 双向唯一映射；manifest 行数字段统一为 n_rows_manifest；val_sel 只许 (b)/(c)，glide 必须 (c)。生效段 L51/L77/L157/L224 均为 5 json/3 csv/8 .md5，历史 L20 明确引用旧 3/3/6 冲突并记录已修正；全文 IgnoreCase 'f1_rule' 计数=0。"
+    },
+    {
+      "id": "C5",
+      "verdict": "PASS",
+      "evidence": "本地复算：_ab_eval/B_s3407.json md5=1b2f752d2a737d25de4d9985f32c9e3b、5,495 B、17 键含 progan 无 glide、n_real=20,809、macro_auc=0.9716511173244291、17 族等权=0.9725638191943664；_ab_test/B_s3407.json md5=36af68fc75dd488f44dd54094fac17a9、5,494 B、17 键含 glide 无 progan、glide auc=0.9204210090302639、thr=0.020103092783505153 与 numpy linspace(0.01,0.99,195)[2] 精确相等、thr_searched=false、thr_source='outputs/ab_matrix/eval/B_s3407.json'、macro_auc=all=0.9689708640106452；test 三口径=0.9718017182/0.9760834440/0.9689708640；四臂 shared/balanced/pooled F1 与 16/17 族 macro AUC 均复现到文档 6 位小数（A 0.547854/0.951842/0.635991、B 0.576358/0.958645/0.650403、C 0.587470/0.964244/0.669149、D 0.609500/0.963457/0.715259；16 族 0.969141/0.971651/0.974081/0.979493；17 族 0.970062/0.972564/0.974603/0.980208）。"
+    },
+    {
+      "id": "C6",
+      "verdict": "N/A",
+      "evidence": "按任务书，cqa1 主机边界项不强制：本次未核验 ckpt md5=df17c433…、cqa1 自带 json fc5ae824…、DEFACTO donor 目录、COCO 缺文件及 AutoSplice 官方配对文件，已列入 deviations。本地 D:\\work\\_v15_manifests.tgz 直接流式解析补偿：四 manifest 行数=240000/43227/35852/79567、uniq_sha==rows 全真、missing=0、(dataset,generator) 组数=10/20/8/20、fake 族数 val_thr=17/val_sel=5/test=17；AutoSplice fake 行四类=1962/1279/422/248（合计 3911，其中 as_?_real=1527 且 source_key 全等于自身 sha256）；DiffSeg30k source_key hex==本行 sha256：val_thr=1384/1384、全量=25835/25835。"
+    },
+    {
+      "id": "C7",
+      "verdict": "PASS",
+      "evidence": "逐句核 §2/§6 禁止红线：L51 与 L155 禁止 v16 划分/split/test 改动/QF 全量/训练；L155、L212–L218 明确禁止 SD14 阈值给 CoCoGlide、0.9761 当 13/17 族宏 AUC；L153 只允许 0.9761 带 12 个 ForenSynths、排除 glide 与 4 编辑族的完整限定；唯一执行例外为 §2 L155 与 §6 L217 的 val_sel 评测；glide 在 L143 明定 (c)。未发现允许性反例句。"
+    },
+    {
+      "id": "C8",
+      "verdict": "PASS",
+      "evidence": "五族 L109 齐全；pairing_status 的 resolved|unresolved 两态在 L105/L109–111；base_key_source 三值顺序为 authentic_sha256→official_pairing→no_pairing_available（L90），DiffSeg30k 仅 authentic_sha256 可改判 resolved（L117）；L112 明令禁止 id 首段并列出 47 值/7,852 行与 200 值/29,320 行反例；AutoSplice as_?_real 第二类在 L116 明定 resolved、base_key=本行自身 sha256、且不受受篡改行自指禁令约束；source_key_sha256 仅以已废/禁止语义出现，不是合法 base_key_source。"
+    },
+    {
+      "id": "C9",
+      "verdict": "PASS",
+      "evidence": "族数直数：val/test per_group=17/17（本地两份 json），val_sel fake 族=5（本地归档 manifest）；thr_status 三值绑定见 L138–144。JSON 类型抽查：val 17 族与 test 17 族的 thr_searched 全部为 bool（34/34），其中 AutoSplice val=true、test=false；top-level thr_source 为 string（test='outputs/ab_matrix/eval/B_s3407.json'）；glide thr_searched=false，类型 bool。"
+    },
+    {
+      "id": "C10",
+      "verdict": "PASS",
+      "evidence": "§2 验收段 L157 要求双路回执路径、signer 与文件名一致、doc_md5 等于现场 md5；§10 L268 明定两路必须签同一 md5、signer 与文件名一致、plan_approved 为两路合取且单路内为 false；§10 表 L265–L266 的 doc_md5/overall/时间均为“待填”，未预填 APPROVED。"
+    }
+  ],
+  "deviations": [
+    "C6 的 cqa1 主机边界项按任务书判 N/A：ckpt df17c433…、cqa1 自带 json fc5ae824…、DEFACTO donor 目录、COCO 缺文件、AutoSplice 官方配对文件均未在本次执行核验；C6 已用本地 _v15_manifests.tgz 完成可复算的等效补偿。",
+    "非阻断笔误：修订链 L22 将 resolved 写成“resovled”；不影响 C1–C10 的字段枚举、判据或本次放行结论，建议后续修订时顺手修正。"
+  ],
+  "notes": "现场写盘时 md5=cbb0c94020c9b69919a9224cd3bc7679，与回执文件名及 doc_md5 一致；写盘后以 python json.load 校验可解析。C1–C10 无 FAIL，C6 依任务书允许记 N/A，故 overall=APPROVED。"
+}

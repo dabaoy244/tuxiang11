@@ -1,0 +1,69 @@
+{
+ "signer": "independent",
+ "doc": "deliverables/485_v15数据审计goal_第0-1-2项_预注册_20261104.md",
+ "doc_md5": "cbb0c94020c9b69919a9224cd3bc7679",
+ "doc_lines": 270,
+ "doc_bytes": 40921,
+ "doc_mtime": "2026-11-04T03:56:34+08:00",
+ "signed_at": "2026-11-04T04:11+08:00",
+ "host": "本机 Windows（pwsh 7.6 / CPython 3.14 + paramiko 3.13）；远程事实核验在 cqa1（connect.cqa1.seetacloud.com:32728，容器 autodl-container-b40b4188bf-47ce98f7）",
+ "overall": "APPROVED",
+ "checks": [
+  {
+   "id": "C1",
+   "verdict": "PASS",
+   "evidence": "现场逐位核（python hashlib + (Get-Item).Length)：md5=cbb0c94020c9b69919a9224cd3bc7679 == 冻结值；bytes=40,921 == 40,921 B；行数=270（len(text.split('\\n'))，纯 UTF-8、b.count(13)=0 无 CRLF；注：Measure-Object -Line 的 222 是「非空行」口径，不构成行数差异）；mtime=2026-11-04T03:56:34.118833+08:00 ≈ 冻结 03:56+08:00；写盘前再复算（04:08:36 现场 04:11 落盘）md5 仍 = cbb0c940… == doc_md5 ⇒ 无 DRIFT。"
+  },
+  {
+   "id": "C2",
+   "verdict": "PASS",
+   "evidence": "Get-ChildItem deliverables 全量（含 -Force）：^48[0-9]*_ 正式文档 = 48_/480/481/482/483/484/485，485_v15数据审计goal_第0-1-2项_预注册_20261104.md 恰一份；grep '485|bak' 无任何 485*.bak-* / 485 重复副本（全部 .bak-* 后缀均为 ≤484 其它号码的正常备份目录习惯）；486、487 不存在 ⇒ 报告名 487 可用。"
+  },
+  {
+   "id": "C3",
+   "verdict": "PASS",
+   "evidence": "难忘块=§2 ```text…```（现场 L50–158）单独审计：①四份 manifest 路径+240000/43227/35852/79567（L56）；②两份冻结 json path+md5+bytes（L58–59）+ 搬运 outputs/audit_v15/inputs/ 逐文件复算 md5（L73–76）+ cqa1 自带 fc5ae824 禁用（L76）；③val_sel 完整 CLI 十旗标 --ckpt/--manifest/--out/--config/--deterministic/--preproc/--size/--batch/--workers/--exclude（L63–68）且三坑写死：--ckpt/--out required=True、--manifest 缺省 val_thr、不带 --thr-from ⇒ 现搜 (b)（L70）；④三份 csv 固定表头一行 14 列（L135）；⑤report 路径 deliverables/487_…（L78）；⑥host/ts/cmd + 5 json/3 csv = 8 .md5（L51/77/157）——L157 验收段亦同口径；⑦块内「见 §X」式外指 grep '见 §|见第|见本文件' 全文 0 命中于块内（唯一命中 L21，修订链历史注、块外）；⑧v12 细化自足：base_key_source 三值（authentic_sha256/official_pairing/no_pairing_available，L90 且明写 source_key_sha256 已废不得用）、AutoSplice 四类命名+行数+②类 authentic 行 base_key=自身 sha256 且明写不受禁自指约束（L116）、DiffSeg30k hex==本行 sha256 不得当底图键、例外只允许 authentic 实测 sha256 改判（L117）。"
+  },
+  {
+   "id": "C4",
+   "verdict": "PASS",
+   "evidence": "thr_status 三值绑定唯一且机械可判（L138–143）：(a) frozen ⇒ thr/bacc/r_acc/f_acc 四字段必数值 + thr_searched 必布尔 false + thr_source 源 json 路径；(b) searched_in_split ⇒ 同四字数 + thr_searched 布尔 true + 必须在 notes 标警并在报告单列；val_sel 表只能是 (b)/(c)（L140）；(c) thr_unavailable ⇒ 五者 null + f1_shared_i/f1_balanced_i 双 null + f1_computable=false（L141）。f1_computable 布尔且只由 thr_status 决定（L144）；f1_shared_i/f1_balanced_i 只在 rows[]、f1_shared_macro/f1_balanced_macro/f1_pooled 只在 summary（L128–136）。clean 分支硬性 sum(per_family[*].unmapped_rows)==0（L122）；「1 族不可判定 + 另 1 对>0」依 ① 落 leak（L124）。第 0 项 failed_checks 空/非空唯一映射、manifest 行数用 n_rows_manifest 字段名（L100–101）。glide 必须 (c)（L143 且 §7 V7 L230 重复）。5 json/3 csv/8 .md5 计数在 L51/L77/L157/L224 四处一致（v11 沿用）。"
+  },
+  {
+   "id": "C5",
+   "verdict": "PASS",
+   "evidence": "本地固定两份 json 逐位复算（python 脚本，全量读取各 per_group）：四臂解析 F1（D:\\work\\_ab_eval\\*_s3407.json）A 0.547854/0.951842/0.635991、B 0.576358/0.958645/0.650403、C 0.587470/0.964244/0.669149、D 0.609500/0.963457/0.715259（shared/balanced/pooled）—— 与§5表逐位一致；16 族宏 AUC（排除 progan）A 0.969141/B 0.971651/C 0.974081/D 0.979493；17 族等权 A 0.970062/B 0.972564/C 0.974603/D 0.980208（B 顶层 macro_auc_all_groups=0.9725638191943662 问者一致）；test 三口径（D:\\work\\_ab_test\\B_s3407.json）：13 非编辑族 0.971802 / 12 ForenSynths 0.976083 / 17 族 0.968971（顶层 macro_auc=0.9689708640106452）；glide AUC 0.9204210090302639；glide thr=0.020103092783505153 == numpy.linspace(0.01,0.99,195)[2]=0.020103092783505152608 逐位一致、thr_searched=false（bool）、test 顶层 thr_source='outputs/ab_matrix/eval/B_s3407.json'（str；per_group 无逐族 thr_source，语义上 glide 之『无冻结阈』由 val_thr 17 键不含 glide（实测）与 16/16 非 glide 族 thr 与 val_thr 逐位相同（diff=[]）+ glide 是唯一新阈包涵）；两份 json md5=1b2f752d2a737d25de4d9985f32c9e3b（5,495 B）/36af68fc75dd488f44dd54094fac17a9（5,494 B）、per_group 17/17 键；n_real val 20,809 / test 41,617。r_acc/f_acc 语义点验：AutoSplice row thr_searched type=bool；bacc=(r_acc+f_acc)/2 与 json 字段一致。"
+  },
+  {
+   "id": "C6",
+   "verdict": "PASS",
+   "evidence": "cqa1 只读实核（paramiko RSAKey → connect.cqa1.seetacloud.com:32728，容器 autodl-container-b40b4188bf-47ce98f7 与文档【执行主机】逐字一致）：①四份 manifest 行数 240000/43227/35852/79567、uniq_sha==rows（240000/43227/35852/79567）、missing=0、(dataset,generator) 组数 10/20/8/20、per_group 直数 val_thr 17 / val_sel 5 / test 17（val_sel fake 组 = AutoSplice+DEFACTO_inpainting+DEFACTO_swapping+DiffSeg30k+GenImageSD14/sd14 直数，test 含 CoCoGlide/glide）；②AutoSplice 四类全 manifest 计数 as_t_fake 1478+124+116+244=1,962 / as_t_real 941+86+84+168=1,279 / as_v_fake 309+22+34+57=422 / as_v_real 178+19+17+34=248（计 3,911，as_?_real 计 1,527 与 §4 披露一致）；train/mask 下 1,622 个 as_t_real_*.png 全零（1622/1622）、2,529 个 as_t_fake_*.png 全非零（2529/2529，PIL 全量逐文件 max()>0）；as_t_fake_40093_v1.jpg 与 as_t_real_40093.jpg 同在 train/image/（test -f 双 yes）；val/image as_v_real_* 326 个；_ids_by_split.json(25,047B)+_meta.json(1,187B) 存在、_meta split_unit='id…'（id 级、train/val/test id 数 1622/326/325）；③DiffSeg30k source_key hex==本行 sha256 四份全等（train 20,299/20,299、val_thr 1,384/1,384、val_sel 1,384/1,384、test 2,768/2,768）；image/mask 仅 ds30k_*（各 28,998，非 ds30k 前缀 0/0）；④DEFACTO donor 缺席：DEFACTO_inp{,_v3,_v3b}、DEFACTO_{inpainting{,_train,_val,_v2},swapping} find 深扫（排除 test/train/val/holdout与*.png）仅剩 _meta.json×4+hash_audit.json×1，无 donor/清单；data/Datasets/COCO/train2017/000000001146.jpg find 无命中；⑤configs/checkpoints/ab_B_s3407_best.pt md5 df17c433ed37ed48fbc19f70bdaa477c / 362,342,718 B；cqa1 自带 outputs/ab_matrix/eval/B_s3407.json md5 fc5ae8242c5c15e6c02b976d9a528b3d / 5,499 B ≠ 冻结值；另：六对 sha256/source_key 交集全 0（§3 六交集复证）。"
+  },
+  {
+   "id": "C7",
+   "verdict": "PASS",
+   "evidence": "全文 grep 红线词：'允许 v16' 0 命中（v16 仅出现于禁令语境 L51/L119/L122/L125/L155/L212）；'0.9761' 仅出现在限定句（L153「只允许以完整限定出现」）与禁令（L155/L216）；QF 全量、test 改动、SD14-glide 混口、训练均落【禁止】L155 与 §6 L210–218；唯一执行例外=第 2 项 val_sel 评测（§6 第 7 条「发起任何训练（第 2 项的 val_sel 评测除外）」+ L155「评测除外」）；glide 必须 (c)（L143）。"
+  },
+  {
+   "id": "C8",
+   "verdict": "PASS",
+   "evidence": "五族齐全（L109 DEFACTO_inpainting/DEFACTO_swapping/AutoSplice/DiffSeg30k/CoCoGlide）；pairing_status 两态（L87/L110–111 resolved|unresolved）；三层底图键优先序 = L113 按序尝试、命中即停（DEFACTO_inpainting→swapping→AutoSplice→DiffSeg30k→CoCoGlide，每步必写 pairing_evidence）；明令禁 id 首段（L112：47 值/167.1 行与 200 值/146.6 行两族形态不同不得套同一解析；+§7 V4 L227）——本轮以 cqa1 实测对齐（首段唯一值（2011 数据递推） doc §4 L183–185 记 47/200，本轮 C6 未单测（清单未含），不冲全）；AutoSplice 四类命名双类分别成 mapping（L116① 受篡改往返 / ② authentic 原图行 base_key=自身 sha256「不受禁自指约束」/ ③ 官方 _ids_by_split.json+_meta.json）；DiffSeg30k 例外仅允许独立 authentic 文件 sha256 改判 resolved（L117）。"
+  },
+  {
+   "id": "C9",
+   "verdict": "PASS",
+   "evidence": "族数直数 17/17/5 见 C6（cqa1 manifest 直数与两份冻结 json per_group 键数 17/17 互证；val_sel 5 = 4 编辑族+GenImageSD14/sd14）；thr_status (a)(b)(c) 绑定逐行可判设定在 L138–143（见 C4）；源 json 抽一行核对：val AutoSplice 行 thr_searched 为 bool（True）、test glide 行 thr_searched 为 bool（False）、两份 json 顶层 thr_source 均为 str（'in-sample-195pt-search' / 'outputs/ab_matrix/eval/B_s3407.json'）。"
+  },
+  {
+   "id": "C10",
+   "verdict": "PASS",
+   "evidence": "§10 L268：『两路必须签同一 md5；回执内 signer 与文件名一致；plan_approved 是两路合取，单路内必为 false』三条齐全；§2【验收】L157 同三口径；§10 表 L263–266 两路 doc_md5/overall/时间均为「待填」，未预填 APPROVED；L269 v9 冻结纪律（签版前不改动、两路各自复算 md5/行数/字节）。"
+  }
+ ],
+ "deviations": [
+  "无 N/A 项、无 DRIFT：cqa1 本轮可达（paramiko RSA），C6 全项实核非 N/A。",
+  "低危信息（不阻断）：data/external/DEFACTO_inp 顶层比文档措辞多一个 test_v1_leaky_2501_20261031 子目录且无 _meta.json（_v3/_v3b皆有 _meta.json）——仍非 donor/原图，donor 缺席判定不受影响。",
+  "低危信息（非规范性文本，不阻断）：修订链 v12 行（doc L22）残留拼写「resovled」（应为 resolved）；不影响 §2 规范块与判定逻辑。"
+ ],
+ "notes": "本回执为本轮（冻结目标=v12 cbb0c940…）的完整独立核验：C1–C10 全 PASS ⇒ overall=APPROVED。值得记录的处理：目标回执路径 receipts/independent_cbb0c94020c9b69919a9224cd3bc7679.json 在本轮写盘前已存在上一轮（04:00:53，同 signer）的 REJECTED 回执——该轮 03:44–03:53 读到 v11（4463a7ae2f0e37bbc4fcf49388300818, 38,106 B / 266 行 / 03:36:48+08:00）并在写盘前现场变 v12，按其轮协议判 DRIFT/REJECTED，且 cqa1 不可达使 C6=N/A。按本任务路径指定，本轮覆盖该文件；为不丢失该历史证据，指纹存证：旧文件 md5=9fe7d3fed9e8faf5b9118edef06eafa1、sha256=056b41c135a5d88d5a968502e1b5fc107618149882aff24925bfb54c958d9598（7,863 B），其核心结论已转录：4463a7ae 快照的 C2–C5/C7–C10 全 PASS、C6=N/A（cqa1 不可达）；其对现场 v12 的冲检查结论（AutoSplice 四类命名收拢、base_key_source 由四值收窄为三值、v12 L22「resovled」笔误）与本轮现场逐位复算结果方向一致、差异以本轮为准。本轮 C6 相对上一轮的关键增量：cqa1 可达后补当了 ckpt md5、cqa1 自带 json 禁差、DEFACTO donor/COCO 缺文件、AutoSplice 宣方配对文件、mask 全量零/非零扫描四类 cqa1 边界事实，全部与文档一致。本回执只写本文件，未改动目标文档/docs/scripts/其它 receipts。"
+}
